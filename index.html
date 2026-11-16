@@ -3,10 +3,108 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Restia: panel web para administrar sucursales de restaurante. Personal, catálogo, mesas, caja, facturación y reportes." />
     <title>Restia · Panel web</title>
+    <style>
+      .page { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+      header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; letter-spacing: .2px; }
+      .brand-mark {
+        width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+        background: var(--accent); color: #fff; font-weight: 800;
+      }
+      .status { font-size: .8rem; padding: 6px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+      .hero { display: grid; grid-template-columns: 1.2fr .8fr; gap: 40px; align-items: center; padding: 40px 0 56px; }
+      .hero h1 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.08; margin: 0 0 16px; }
+      .hero h1 em { font-style: normal; color: var(--accent); }
+      .hero p { font-size: 1.05rem; color: var(--muted); line-height: 1.6; margin: 0 0 22px; max-width: 56ch; }
+      .facts { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; margin: 0; list-style: none; }
+      .facts li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: .9rem; }
+      .facts b { color: var(--accent); }
+      .card {
+        background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 26px;
+        box-shadow: 0 18px 40px -24px rgba(45, 25, 110, .35);
+      }
+
+      section.block { padding: 40px 0; border-top: 1px solid var(--line); }
+      section.block h2 { font-size: 1.5rem; margin: 0 0 6px; }
+      section.block > p { color: var(--muted); margin: 0 0 24px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+      .module { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+      .module h3 { margin: 0 0 6px; font-size: 1rem; }
+      .module p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.45; }
+      .tag { display: inline-block; margin-top: 10px; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); }
+
+      .flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      .flow .module small { color: var(--muted); }
+
+      footer { padding: 28px 0 40px; color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); }
+
+      @media (max-width: 820px) {
+        .hero { grid-template-columns: 1fr; padding-top: 16px; }
+        .flow { grid-template-columns: 1fr; }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div class="page">
+      <header class="top">
+        <div class="brand"><span class="brand-mark">R</span> Restia</div>
+        <span class="status">Panel web · en desarrollo</span>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <h1>La operación del restaurante, <em>en un solo panel</em>.</h1>
+            <p>
+              Restia une el piso, la cocina y la caja. Meseros y cocina trabajan en la app Android; administradores y
+              gerentes configuran la sucursal y supervisan la operación desde este panel web. Ambos usan la misma API.
+            </p>
+            <ul class="facts">
+              <li><b>199</b> operaciones de la API para la web</li>
+              <li><b>17</b> módulos del panel</li>
+              <li><b>4</b> roles: administrador, gerente, mesero y cocina</li>
+            </ul>
+          </div>
+          <div class="card">
+            <!-- Vue monta aquí la vista de acceso (src/views/LoginView.vue). -->
+            <div id="app"></div>
+            <noscript>El panel necesita JavaScript habilitado.</noscript>
+          </div>
+        </section>
+
+        <section class="block">
+          <h2>Módulos del panel</h2>
+          <p>Lo que administra cada sucursal. Cada módulo respeta los permisos del rol que inicia sesión.</p>
+          <div class="grid">
+            <article class="module"><h3>Personal y sucursales</h3><p>Altas con enlace de contraseña, roles, bajas y datos de cada sucursal.</p><span class="tag">Administración</span></article>
+            <article class="module"><h3>Catálogo y menú</h3><p>Productos, modificadores, estaciones de cocina, recetas y disponibilidad.</p><span class="tag">Configuración</span></article>
+            <article class="module"><h3>Mesas y QR</h3><p>Mesas por zona, mantenimiento y el código QR público de cada una.</p><span class="tag">Configuración</span></article>
+            <article class="module"><h3>Inventario</h3><p>Ingredientes, recepciones de proveedor, mermas y conteos físicos.</p><span class="tag">Operación</span></article>
+            <article class="module"><h3>Caja</h3><p>Turnos, depósitos y retiros, conciliación de pagos y corte con diferencias.</p><span class="tag">Operación</span></article>
+            <article class="module"><h3>Facturación</h3><p>Emisores y CSD, facturas, cancelación, sustitución y factura global.</p><span class="tag">Fiscal</span></article>
+            <article class="module"><h3>Impresión</h3><p>Impresoras, rutas y trabajos: reintentar, resolver y reimprimir.</p><span class="tag">Operación</span></article>
+            <article class="module"><h3>Reportes y auditoría</h3><p>Ventas por día, ocupación por hora y bitácora de cambios.</p><span class="tag">Supervisión</span></article>
+          </div>
+        </section>
+
+        <section class="block">
+          <h2>Cómo encaja</h2>
+          <p>Un solo backend y dos clientes; ningún cliente guarda reglas de negocio propias.</p>
+          <div class="flow">
+            <div class="module"><h3>Panel web (este repositorio)</h3><p>Vue 3 + Vite. Sesión con cookie y CSRF.</p><small>restia-web</small></div>
+            <div class="module"><h3>API</h3><p>Laravel 13 + MongoDB, monolito modular con contrato OpenAPI.</p><small>restia-api</small></div>
+            <div class="module"><h3>App de piso</h3><p>Android (Kotlin, Jetpack Compose) para meseros y cocina.</p><small>restia-mobile</small></div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        Restia · Proyecto integrador, Desarrollo WEB Integral · Universidad Tecnológica de Jalisco, 2026.
+      </footer>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
