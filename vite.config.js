@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { SECURITY_HEADERS } from './security-headers.js'
 
 // El panel consume restia-api. En desarrollo, /api y /sanctum se envían al backend local para que la
 // cookie de sesión y el token CSRF sean del mismo origen (D-36, sección 6).
@@ -13,6 +14,10 @@ export default defineConfig({
       '/api': { target: API_URL, changeOrigin: true },
       '/sanctum': { target: API_URL, changeOrigin: true },
     },
+  },
+  // `vite preview` sirve el build con la misma CSP y cabeceras que producción.
+  preview: {
+    headers: SECURITY_HEADERS,
   },
   test: {
     environment: 'jsdom',
