@@ -1,13 +1,42 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from './views/LoginView.vue'
+import LandingView from './views/LandingView.vue'
+import PanelLayout from './layouts/PanelLayout.vue'
+import HomeView from './views/HomeView.vue'
+import ModulePendingView from './views/ModulePendingView.vue'
+import { MODULES } from './modules.js'
+import { useSession } from './stores/session.js'
 
-// Los módulos del panel (personal, catálogo, mesas, inventario, caja, facturación, reportes…) se agregan
-// aquí como rutas hijas protegidas por permiso conforme avanzan los sprints.
+// Cada módulo es una ruta hija de /panel con su permiso de lectura. Mientras se construye, muestra
+// ModulePendingView; al terminarlo se cambia aquí su `component`.
+const moduleRoutes = MODULES.map((m) => ({
+  path: m.key,
+  name: m.key,
+  component: ModulePendingView,
+  meta: { permission: m.permission, module: m.key },
+}))
+
 export const routes = [
-  { path: '/', name: 'login', component: LoginView },
-  { path: '/:pathMatch(.*)*', redirect: '/' },
+  { path: '/', name: 'login', component: LandingView, meta: { public: true } },
+  {
+    path: '/panel',
+    component: PanelLayout,
+    children: [{ path: '', name: 'inicio', component: HomeView }, ...moduleRoutes],
+  },
+  { path: '/:pathMatch(.*)*', redirect: '/panel' },
 ]
 
+/** Decide a dónde va una navegación según la sesión. Separada del router para probarla sola. */
+export async function guard(to, session) {
+  const signedIn = await session.restore()
+  if (to.meta.public) return signedIn ? { name: 'inicio' } : true
+  if (!signedIn) return { name: 'login', query: to.fullPath !== '/panel' ? { volver: to.fullPath } : {} }
+  // Sin el permiso en la sucursal elegida (por ejemplo, al cambiar de sucursal), de vuelta al inicio.
+  if (to.meta.permission && !session.canOpen(to.meta.permission)) return { name: 'inicio' }
+  return true
+}
+
 export function makeRouter(history = createWebHistory()) {
-  return createRouter({ history, routes })
+  const router = createRouter({ history, routes })
+  router.beforeEach((to) => guard(to, useSession()))
+  return router
 }

@@ -1,8 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useSession } from '../stores/session.js'
+import { safeReturn } from '../lib/navigation.js'
 
 const session = useSession()
+const router = useRouter()
+const route = useRoute()
 const email = ref('')
 const password = ref('')
 const canSubmit = computed(
@@ -14,17 +18,17 @@ async function submit() {
   const ok = await session.login(email.value, password.value)
   // La contraseña no se queda en memoria más de lo necesario.
   password.value = ''
-  if (ok) email.value = ''
+  if (ok) {
+    email.value = ''
+    await router.push(safeReturn(route.query.volver))
+  }
 }
 </script>
 
 <template>
-  <div v-if="session.signedIn" class="welcome">
-    <h2>Hola, {{ session.user.name }}</h2>
-    <p>Sesión iniciada. Los módulos del panel llegan en los siguientes sprints.</p>
-  </div>
-  <form v-else class="login" @submit.prevent="submit">
+  <form class="login" @submit.prevent="submit">
     <h2>Acceso al panel</h2>
+    <p v-if="session.expired" class="notice" role="status">Tu sesión terminó por inactividad. Vuelve a entrar.</p>
     <label>
       Correo
       <input v-model="email" type="email" autocomplete="username" required />
@@ -54,6 +58,6 @@ button {
 }
 button:disabled { opacity: .45; cursor: not-allowed; }
 .hint { margin: 0; font-size: .8rem; color: var(--muted); }
-.error { margin: 0; color: #b3261e; font-size: .9rem; }
-.welcome p { color: var(--muted); margin: 0; }
+.error { margin: 0; color: var(--danger); font-size: .9rem; }
+.notice { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: .9rem; }
 </style>
