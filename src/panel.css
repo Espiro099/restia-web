@@ -63,3 +63,10 @@ textarea.field { resize: vertical; }
 }
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Al imprimir un QR solo sale su tarjeta (TablesView). */
+@media print {
+  body * { visibility: hidden; }
+  .qr-print, .qr-print * { visibility: visible; }
+  .qr-print { position: absolute; left: 0; top: 0; width: 100%; border: 0; }
+}

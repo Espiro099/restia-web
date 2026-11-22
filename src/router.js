@@ -10,6 +10,7 @@ import { useSession } from './stores/session.js'
 const BUILT = {
   personal: () => import('./views/PersonalView.vue'),
   menu: () => import('./views/MenuView.vue'),
+  mesas: () => import('./views/TablesView.vue'),
 }
 
 // Cada módulo es una ruta hija de /panel con su permiso de lectura.
