@@ -1,0 +1,65 @@
+/* Piezas comunes de los módulos del panel: encabezado, botones, tablas, formularios y estados.
+   Van en un archivo (no en línea) por la CSP. */
+.mod-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.mod-head h1 { margin: 0 0 4px; font-size: 1.6rem; }
+.mod-lead { margin: 0 0 18px; color: var(--muted); }
+
+.btn { font: inherit; font-size: .85rem; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; padding: 9px 16px; }
+.btn-danger { color: var(--danger); }
+.btn-danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; padding: 9px 16px; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
+.tabs button { font: inherit; font-size: .95rem; padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.toolbar { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.toolbar label, .form label { display: grid; gap: 6px; font-size: .85rem; color: var(--muted); }
+.toolbar .count { color: var(--muted); font-size: .85rem; margin-left: auto; }
+.field { font: inherit; color: var(--text); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+.field:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+textarea.field { resize: vertical; }
+
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; }
+.box + .box { margin-top: 14px; }
+.box h2 { margin: 0; padding: 12px 14px; font-size: .8rem; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.data-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.data-table th { text-align: left; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--line); font-weight: 600; }
+.data-table td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.data-table tr:last-child td { border-bottom: 0; }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.data-table .actions { text-align: right; }
+.data-table .actions .btn { margin: 0 0 6px 6px; }
+.cell-main { display: block; font-weight: 600; }
+.cell-sub { display: block; color: var(--muted); font-size: .84rem; overflow-wrap: anywhere; }
+.empty-row { text-align: center; color: var(--muted); padding: 28px !important; }
+
+.pill { display: inline-block; font-size: .76rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; background: #e6f4ea; color: var(--ok); margin: 0 4px 4px 0; }
+.pill.muted { background: var(--bg); color: var(--muted); }
+.pill.warn { background: #fff4e0; color: #8a4b00; }
+.pill.accent { background: var(--accent-soft); color: var(--accent); }
+
+.notice-ok { background: #e6f4ea; color: var(--ok); padding: 10px 14px; border-radius: 10px; margin: 0 0 14px; }
+.form { display: grid; gap: 12px; }
+.form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; margin: 0; }
+.form legend { font-size: .85rem; color: var(--muted); padding: 0 4px; }
+.form .check { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: .92rem; }
+.help { margin: 0; color: var(--muted); font-size: .88rem; line-height: 1.45; }
+.form-error { margin: 0; color: var(--danger); font-size: .9rem; }
+.form-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+@media (max-width: 640px) {
+  .form .row { grid-template-columns: 1fr; }
+  .data-table thead { display: none; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table tr { border-bottom: 1px solid var(--line); padding: 8px 0; }
+  .data-table td { border: 0; padding: 3px 14px; }
+  .data-table .num, .data-table .actions { text-align: left; }
+  .data-table .actions .btn { margin: 4px 6px 0 0; }
+}
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
