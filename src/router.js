@@ -24,6 +24,8 @@ const moduleRoutes = MODULES.map((m) => ({
 
 export const routes = [
   { path: '/', name: 'login', component: LandingView, meta: { public: true } },
+  // Menú del QR de cada mesa (`/m#token`): para clientes, sin sesión. Es la URL que imprime la API.
+  { path: '/m', name: 'menu-publico', component: () => import('./views/PublicMenuView.vue'), meta: { anonymous: true } },
   {
     path: '/panel',
     component: PanelLayout,
@@ -34,6 +36,8 @@ export const routes = [
 
 /** Decide a dónde va una navegación según la sesión. Separada del router para probarla sola. */
 export async function guard(to, session) {
+  // El menú del QR no pregunta por sesión: el cliente no tiene una y no debe ver el panel.
+  if (to.meta.anonymous) return true
   const signedIn = await session.restore()
   if (to.meta.public) return signedIn ? { name: 'inicio' } : true
   if (!signedIn) return { name: 'login', query: to.fullPath !== '/panel' ? { volver: to.fullPath } : {} }
