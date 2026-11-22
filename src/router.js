@@ -6,12 +6,16 @@ import ModulePendingView from './views/ModulePendingView.vue'
 import { MODULES } from './modules.js'
 import { useSession } from './stores/session.js'
 
-// Cada módulo es una ruta hija de /panel con su permiso de lectura. Mientras se construye, muestra
-// ModulePendingView; al terminarlo se cambia aquí su `component`.
+// Pantalla de cada módulo terminado; los demás muestran ModulePendingView. Se cargan bajo demanda.
+const BUILT = {
+  personal: () => import('./views/PersonalView.vue'),
+}
+
+// Cada módulo es una ruta hija de /panel con su permiso de lectura.
 const moduleRoutes = MODULES.map((m) => ({
   path: m.key,
   name: m.key,
-  component: ModulePendingView,
+  component: BUILT[m.key] ?? ModulePendingView,
   meta: { permission: m.permission, module: m.key },
 }))
 

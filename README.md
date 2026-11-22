@@ -35,7 +35,7 @@ Usuarios locales de prueba: `gerente@demo.mx` usa `RESTIA_DEMO_PASSWORD` del `.e
 
 El panel es para administración y gerencia: un módulo se ve solo si el rol en la sucursal elegida es `ADMIN` o `MANAGER` y tiene su permiso. Meseros y cocina trabajan en la app Android. La API aplica los permisos en cada petición; el panel solo decide qué mostrar.
 
-Para construir un módulo, cambia su `component` en `src/router.js` (hoy `ModulePendingView`) y sus datos se recargan observando `session.branchId`.
+Para construir un módulo, agrega su pantalla a `BUILT` en `src/router.js` (sin ella muestra `ModulePendingView`) y recarga sus datos observando `session.branchId`.
 
 ## Forma de trabajo (GitHub Flow)
 
