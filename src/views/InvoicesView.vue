@@ -3,6 +3,7 @@ import { computed, provide, ref } from 'vue'
 import { useSession } from '../stores/session.js'
 import { invoicesApi } from '../lib/invoices.js'
 import InvoiceList from './invoices/InvoiceList.vue'
+import GlobalInvoices from './invoices/GlobalInvoices.vue'
 import IssuerList from './invoices/IssuerList.vue'
 
 const props = defineProps({
@@ -17,8 +18,14 @@ const perms = computed(() => ({
   stamp: session.canHere('invoices.stamp'),
   cancel: session.canHere('invoices.cancel'),
   reconcile: session.canHere('invoices.reconcile'),
+  global: session.canHere('invoices.global'),
   issuers: session.canHere('fiscal.manage_issuers'),
 }))
+const tabs = computed(() => [
+  { key: 'facturas', label: 'Facturas' },
+  ...(perms.value.global ? [{ key: 'global', label: 'Factura global' }] : []),
+  ...(perms.value.issuers ? [{ key: 'emisores', label: 'Emisores' }] : []),
+])
 const tab = ref('facturas')
 
 provide('invoices', { calls, branchId: () => session.branchId, perms, today: props.today })
@@ -33,13 +40,13 @@ provide('invoices', { calls, branchId: () => session.branchId, perms, today: pro
       </div>
     </header>
 
-    <div v-if="perms.issuers" class="tabs" role="tablist" aria-label="Partes de facturación">
-      <button id="tab-facturas" type="button" role="tab" :aria-selected="tab === 'facturas'" aria-controls="panel-facturacion" @click="tab = 'facturas'">Facturas</button>
-      <button id="tab-emisores" type="button" role="tab" :aria-selected="tab === 'emisores'" aria-controls="panel-facturacion" @click="tab = 'emisores'">Emisores</button>
+    <div v-if="tabs.length > 1" class="tabs" role="tablist" aria-label="Partes de facturación">
+      <button v-for="t in tabs" :id="`tab-${t.key}`" :key="t.key" type="button" role="tab" :aria-selected="tab === t.key" aria-controls="panel-facturacion" @click="tab = t.key">{{ t.label }}</button>
     </div>
 
-    <div id="panel-facturacion" :role="perms.issuers ? 'tabpanel' : undefined" :aria-labelledby="perms.issuers ? `tab-${tab}` : undefined">
+    <div id="panel-facturacion" :role="tabs.length > 1 ? 'tabpanel' : undefined" :aria-labelledby="tabs.length > 1 ? `tab-${tab}` : undefined">
       <InvoiceList v-if="tab === 'facturas'" />
+      <GlobalInvoices v-else-if="tab === 'global'" />
       <IssuerList v-else />
     </div>
   </section>
