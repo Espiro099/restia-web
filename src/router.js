@@ -14,6 +14,7 @@ const BUILT = {
   impresion: () => import('./views/PrintingView.vue'),
   reportes: () => import('./views/ReportsView.vue'),
   caja: () => import('./views/CashView.vue'),
+  clientes: () => import('./views/CustomersView.vue'),
 }
 
 // Cada módulo es una ruta hija de /panel con su permiso de lectura.
