@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import LoginView from '../src/views/LoginView.vue'
+import HomeView from '../src/views/HomeView.vue'
 import { useSession } from '../src/stores/session.js'
 import { SECURITY_HEADERS } from '../security-headers.js'
 
@@ -21,11 +21,12 @@ describe('XSS', () => {
 
   it('el texto que llega de la API se muestra escapado, nunca como HTML', async () => {
     const session = useSession()
-    const payload = '<img src=x onerror="alert(1)"><script>alert(2)</script>'
-    session.user = { name: payload }
+    // Sin espacios: el inicio saluda con la primera palabra del nombre.
+    const payload = '<img/src=x/onerror="alert(1)"><script>alert(2)</script>'
+    session.user = { id: 'u1', name: payload }
     session.memberships = []
 
-    const wrapper = mount(LoginView)
+    const wrapper = mount(HomeView)
 
     // Vue codifica la interpolación {{ }}: el navegador recibe &lt;img ... y no crea elementos.
     expect(wrapper.find('img').exists()).toBe(false)
