@@ -13,6 +13,7 @@ const BUILT = {
   mesas: () => import('./views/TablesView.vue'),
   impresion: () => import('./views/PrintingView.vue'),
   reportes: () => import('./views/ReportsView.vue'),
+  caja: () => import('./views/CashView.vue'),
 }
 
 // Cada módulo es una ruta hija de /panel con su permiso de lectura.
