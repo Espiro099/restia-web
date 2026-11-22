@@ -9,6 +9,7 @@ import { useSession } from './stores/session.js'
 // Pantalla de cada módulo terminado; los demás muestran ModulePendingView. Se cargan bajo demanda.
 const BUILT = {
   personal: () => import('./views/PersonalView.vue'),
+  menu: () => import('./views/MenuView.vue'),
 }
 
 // Cada módulo es una ruta hija de /panel con su permiso de lectura.

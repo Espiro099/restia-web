@@ -6,6 +6,7 @@ import { setUnauthorizedHandler } from './lib/client.js'
 import { useSession } from './stores/session.js'
 import './style.css'
 import './landing.css'
+import './panel.css'
 
 const app = createApp(App)
 const pinia = createPinia()
