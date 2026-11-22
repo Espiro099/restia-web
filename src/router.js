@@ -19,6 +19,7 @@ const BUILT = {
   dispositivos: () => import('./views/DevicesView.vue'),
   auditoria: () => import('./views/AuditView.vue'),
   facturacion: () => import('./views/InvoicesView.vue'),
+  inventario: () => import('./views/InventoryView.vue'),
 }
 
 // Cada módulo es una ruta hija de /panel con su permiso de lectura.
