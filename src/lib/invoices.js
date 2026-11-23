@@ -178,3 +178,8 @@ export function invoicesApi(api = defaultApi) {
     },
   }
 }
+
+/** "1 cuenta", "3 cuentas". */
+export function checksText(n) {
+  return `${n} ${n === 1 ? 'cuenta' : 'cuentas'}`
+}

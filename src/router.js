@@ -8,6 +8,7 @@ import { useSession } from './stores/session.js'
 
 // Pantalla de cada módulo terminado; los demás muestran ModulePendingView. Se cargan bajo demanda.
 const BUILT = {
+  sucursal: () => import('./views/BranchView.vue'),
   personal: () => import('./views/PersonalView.vue'),
   menu: () => import('./views/MenuView.vue'),
   mesas: () => import('./views/TablesView.vue'),

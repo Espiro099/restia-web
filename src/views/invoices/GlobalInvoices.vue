@@ -2,7 +2,7 @@
 import { computed, inject, reactive, ref, watch } from 'vue'
 import ErrorNotice from '../../components/ErrorNotice.vue'
 import ModalDialog from '../../components/ModalDialog.vue'
-import { INVOICE_STATUS, globalPeriods, invoiceActions, invoicesErrorText } from '../../lib/invoices.js'
+import { INVOICE_STATUS, checksText, globalPeriods, invoiceActions, invoicesErrorText } from '../../lib/invoices.js'
 import { formatMoney } from '../../lib/money.js'
 import { validReason } from '../../lib/personal.js'
 import { useAction } from '../../lib/useAction.js'
@@ -98,7 +98,7 @@ async function submit() {
     // Recién armada: lo siguiente es timbrarla.
     const batch = batches.value.find((x) => x.id === created.id) ?? created
     openStamp(batch)
-    notice.value = `Se armó la factura global con ${batch.checkIds.length} cuentas. Revísala y tímbrala.`
+    notice.value = `Se armó la factura global con ${checksText(batch.checkIds.length)}. Revísala y tímbrala.`
   } else {
     dialog.value = null
   }
@@ -158,7 +158,7 @@ function time(iso) {
         </template>
 
         <template v-else-if="dialog.kind === 'stamp'">
-          <p v-if="dialog.invoice" class="help">Se timbra la factura global de {{ periodText(dialog.batch) }} por {{ formatMoney(dialog.invoice.total) }}, con {{ dialog.batch.checkIds.length }} cuentas. Ya timbrada, una cuenta solo se puede facturar aparte sacándola de la global.</p>
+          <p v-if="dialog.invoice" class="help">Se timbra la factura global de {{ periodText(dialog.batch) }} por {{ formatMoney(dialog.invoice.total) }}, con {{ checksText(dialog.batch.checkIds.length) }}. Ya timbrada, una cuenta solo se puede facturar aparte sacándola de la global.</p>
           <p v-else class="help">Cargando la factura…</p>
         </template>
 

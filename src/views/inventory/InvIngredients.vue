@@ -97,7 +97,7 @@ async function submit() {
           <option value="all">Todos</option>
         </select>
       </label>
-      <span class="count">{{ visible.length }} insumos</span>
+      <span class="count">{{ visible.length }} {{ visible.length === 1 ? 'insumo' : 'insumos' }}</span>
       <button v-if="perms.manage" type="button" class="btn btn-primary" @click="open('add')">Nuevo insumo</button>
     </div>
     <p v-if="notice && !dialog" class="notice-ok" role="status">{{ notice }}</p>
