@@ -2,11 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LandingView from './views/LandingView.vue'
 import PanelLayout from './layouts/PanelLayout.vue'
 import HomeView from './views/HomeView.vue'
-import ModulePendingView from './views/ModulePendingView.vue'
 import { MODULES } from './modules.js'
 import { useSession } from './stores/session.js'
 
-// Pantalla de cada módulo terminado; los demás muestran ModulePendingView. Se cargan bajo demanda.
+// Pantalla de cada módulo; se cargan bajo demanda.
 const BUILT = {
   sucursal: () => import('./views/BranchView.vue'),
   personal: () => import('./views/PersonalView.vue'),
@@ -27,7 +26,7 @@ const BUILT = {
 const moduleRoutes = MODULES.map((m) => ({
   path: m.key,
   name: m.key,
-  component: BUILT[m.key] ?? ModulePendingView,
+  component: BUILT[m.key],
   meta: { permission: m.permission, module: m.key },
 }))
 
