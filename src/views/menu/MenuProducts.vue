@@ -1,10 +1,11 @@
 <script setup>
-import { computed, inject, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, ref } from 'vue'
 import ModalDialog from '../../components/ModalDialog.vue'
 import {
   CODE_PATTERN, FISCAL_DEFAULTS, byCategory, catalogErrorText, hasActiveRoute, money, normalizeCode,
 } from '../../lib/catalog.js'
 import { formatMoney } from '../../lib/money.js'
+import { IMAGE_ACCEPT, imageProblem, imageSrc, shrinkImage } from '../../lib/productImage.js'
 import { validReason } from '../../lib/personal.js'
 import { useAction } from '../../lib/useAction.js'
 
@@ -45,19 +46,49 @@ function open(kind, product = null) {
     price: p?.price?.amount ?? '',
     displayOrder: p?.displayOrder ?? 0,
     description: p?.description ?? '',
-    imageUrl: p?.imageUrl ?? '',
     modifierIds: [...(p?.modifierIds ?? [])],
     fiscal: { ...FISCAL_DEFAULTS, ...(p?.fiscal ?? {}) },
     // Rutas: estación elegida → prioridad. Las inactivas que ya tenía se muestran para poder quitarlas.
     routes: Object.fromEntries((p?.routes ?? []).map((r) => [r.stationId, r.priority])),
     reason: '',
+    // Foto: el archivo elegido, su vista previa local y por qué no sirve.
+    file: null,
+    preview: '',
+    photoProblem: '',
   }
 }
 function close() {
-  if (!busy.value) dialog.value = null
+  if (busy.value) return
+  dropPreview()
+  dialog.value = null
 }
 
-const TITLES = { add: 'Nuevo producto', edit: 'Editar producto', routes: 'Estaciones que lo preparan', on: 'Activar producto', off: 'Desactivar producto' }
+// ---------------------------------------------------------------- Foto
+function dropPreview() {
+  if (dialog.value?.preview) URL.revokeObjectURL(dialog.value.preview)
+}
+onBeforeUnmount(dropPreview)
+
+function choosePhoto(event) {
+  const d = dialog.value
+  const file = event.target.files?.[0] ?? null
+  dropPreview()
+  error.value = ''
+  d.photoProblem = imageProblem(file)
+  d.file = d.photoProblem ? null : file
+  d.preview = d.file ? URL.createObjectURL(d.file) : ''
+}
+
+async function removePhoto() {
+  const d = dialog.value
+  const ok = await run(() => calls.removeImage(branchId(), d.product), `Se quitó la foto de ${d.product.name}.`)
+  if (ok) close()
+}
+
+const TITLES = {
+  add: 'Nuevo producto', edit: 'Editar producto', routes: 'Estaciones que lo preparan', on: 'Activar producto', off: 'Desactivar producto',
+  photo: 'Foto del producto',
+}
 
 // Modificadores que se ofrecen en la ficha: los activos y los que el producto ya tenga.
 const modifierChoices = computed(() => {
@@ -83,7 +114,6 @@ const formProblem = computed(() => {
   if (!d.category.trim()) return 'Falta la categoría.'
   if (!money(d.price)) return 'Revisa el precio: hasta dos decimales.'
   if (!Number.isInteger(Number(d.displayOrder)) || Number(d.displayOrder) < 0) return 'El orden es un número entero desde 0.'
-  if (d.imageUrl.trim() && !/^https:\/\/\S+$/.test(d.imageUrl.trim())) return 'La imagen debe ser una dirección https://.'
   if (!/^[0-9]{8}$/.test(d.fiscal.satProductCode)) return 'La clave de producto del SAT lleva 8 dígitos.'
   if (!/^[A-Z0-9]{2,3}$/.test(d.fiscal.satUnitCode)) return 'La clave de unidad del SAT lleva 2 o 3 caracteres.'
   if (!/^[0-9]{2}$/.test(d.fiscal.taxObject)) return 'El objeto de impuesto lleva 2 dígitos.'
@@ -95,6 +125,7 @@ const canSubmit = computed(() => {
   const d = dialog.value
   if (!d || busy.value) return false
   if (d.kind === 'routes') return true
+  if (d.kind === 'photo') return d.file !== null
   if (d.kind === 'on' || d.kind === 'off') return validReason(d.reason) && (d.kind === 'off' || hasActiveRoute(d.product, props.stations))
   return !formProblem.value
 })
@@ -106,7 +137,6 @@ function fields(d) {
     price: money(d.price),
     displayOrder: Number(d.displayOrder),
     description: d.description.trim() || null,
-    imageUrl: d.imageUrl.trim() || null,
     modifierIds: d.modifierIds,
     fiscal: { ...d.fiscal },
   }
@@ -117,7 +147,7 @@ function changes(p, next) {
   const out = {}
   const current = {
     name: p.name, category: p.category, price: p.price, displayOrder: p.displayOrder, description: p.description ?? null,
-    imageUrl: p.imageUrl ?? null, modifierIds: p.modifierIds, fiscal: p.fiscal,
+    modifierIds: p.modifierIds, fiscal: p.fiscal,
   }
   for (const [key, value] of Object.entries(next)) {
     const before = key === 'price' ? current.price?.amount : current[key]
@@ -138,6 +168,8 @@ async function submit() {
     } else if (d.kind === 'edit') {
       const diff = changes(d.product, fields(d))
       if (Object.keys(diff).length) await calls.updateProduct(b, d.product, diff)
+    } else if (d.kind === 'photo') {
+      await calls.uploadImage(b, d.product, await shrinkImage(d.file))
     } else if (d.kind === 'routes') {
       const routes = Object.entries(d.routes).sort((a, c) => a[1] - c[1]).map(([stationId], i) => ({ stationId, priority: i + 1 }))
       await calls.routes(b, d.product, routes)
@@ -148,6 +180,7 @@ async function submit() {
     add: `Se creó ${d.name.trim()}. Queda inactivo: elige las estaciones que lo preparan y actívalo.`,
     edit: `Se guardó ${d.name.trim()}.`,
     routes: `Se guardaron las estaciones de ${d.product?.name}.`,
+    photo: `Se guardó la foto de ${d.product?.name}. La app y el menú QR la muestran al recargar.`,
     on: `${d.product?.name} ya se puede pedir.`,
     off: `${d.product?.name} ya no aparece al pedir.`,
   })[d.kind])
@@ -157,6 +190,7 @@ async function submit() {
     open('routes', created)
     notice.value = `Se creó ${created.name}. Queda inactivo: elige las estaciones que lo preparan y actívalo.`
   } else {
+    dropPreview()
     dialog.value = null
   }
 }
@@ -193,7 +227,13 @@ async function toggleAvailability(p) {
         <thead><tr><th scope="col">Producto</th><th scope="col" class="num">Precio</th><th scope="col">Estaciones</th><th scope="col">Estado</th><th scope="col"><span class="sr-only">Acciones</span></th></tr></thead>
         <tbody>
           <tr v-for="p in g.items" :key="p.id">
-            <td><span class="cell-main">{{ p.name }}</span><span class="cell-sub">{{ p.code }}<template v-if="p.description"> · {{ p.description }}</template></span></td>
+            <td>
+              <div class="product-cell">
+                <img v-if="imageSrc(p.imageUrl)" :src="imageSrc(p.imageUrl)" alt="" class="thumb" width="44" height="44" loading="lazy" />
+                <span v-else class="thumb thumb-empty" aria-hidden="true">{{ p.name.trim().charAt(0).toUpperCase() }}</span>
+                <span><span class="cell-main">{{ p.name }}</span><span class="cell-sub">{{ p.code }}<template v-if="p.description"> · {{ p.description }}</template></span></span>
+              </div>
+            </td>
             <td class="num">{{ formatMoney(p.price) }}</td>
             <td>
               <span v-for="r in p.routes" :key="r.stationId" class="pill accent">{{ stationName.get(r.stationId) ?? 'Estación' }}</span>
@@ -206,6 +246,7 @@ async function toggleAvailability(p) {
             <td class="actions">
               <template v-if="canManage">
                 <button type="button" class="btn" @click="open('edit', p)">Editar</button>
+                <button type="button" class="btn" @click="open('photo', p)">Foto</button>
                 <button type="button" class="btn" @click="open('routes', p)">Estaciones</button>
                 <button v-if="p.status === 'ACTIVE'" type="button" class="btn btn-danger" @click="open('off', p)">Desactivar</button>
                 <button v-else type="button" class="btn" @click="open('on', p)">Activar</button>
@@ -235,10 +276,7 @@ async function toggleAvailability(p) {
           </div>
           <datalist id="menu-categories"><option v-for="c in categories" :key="c" :value="c" /></datalist>
           <label>Descripción<textarea v-model="dialog.description" class="field" rows="2" maxlength="1000" /></label>
-          <div class="row">
-            <label>Orden en su categoría<input v-model.number="dialog.displayOrder" class="field" type="number" min="0" max="100000" /></label>
-            <label>Imagen (https, opcional)<input v-model="dialog.imageUrl" class="field" type="url" maxlength="2048" /></label>
-          </div>
+          <label>Orden en su categoría<input v-model.number="dialog.displayOrder" class="field" type="number" min="0" max="100000" /></label>
           <fieldset v-if="modifierChoices.length">
             <legend>Modificadores</legend>
             <label v-for="m in modifierChoices" :key="m.id" class="check">
@@ -260,6 +298,20 @@ async function toggleAvailability(p) {
             </div>
           </details>
           <p v-if="formProblem" class="help" aria-live="polite">{{ formProblem }}</p>
+        </template>
+
+        <template v-else-if="dialog.kind === 'photo'">
+          <p class="help">La foto de {{ dialog.product.name }} se ve en la app al tomar pedidos y en el menú QR. JPG, PNG o WebP; se reduce a 1200 px antes de subirla.</p>
+          <div class="photo-preview">
+            <img v-if="dialog.preview || imageSrc(dialog.product.imageUrl)" :src="dialog.preview || imageSrc(dialog.product.imageUrl)"
+              :alt="dialog.preview ? 'Foto nueva elegida' : `Foto actual de ${dialog.product.name}`" />
+            <span v-else class="help">Todavía no tiene foto.</span>
+          </div>
+          <label>{{ dialog.product.imageUrl ? 'Cambiar por otra foto' : 'Elegir foto' }}
+            <input class="field" type="file" :accept="IMAGE_ACCEPT" :disabled="busy" @change="choosePhoto" />
+          </label>
+          <p v-if="dialog.photoProblem" class="form-error" role="alert">{{ dialog.photoProblem }}</p>
+          <button v-if="dialog.product.imageUrl && !dialog.preview" type="button" class="btn btn-danger" :disabled="busy" @click="removePhoto">Quitar foto</button>
         </template>
 
         <template v-else-if="dialog.kind === 'routes'">
@@ -296,4 +348,9 @@ async function toggleAvailability(p) {
 details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
 summary { cursor: pointer; font-size: .9rem; color: var(--muted); }
 .fiscal { margin-top: 10px; }
+.product-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.thumb { flex: none; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--accent-soft); }
+.thumb-empty { display: grid; place-items: center; color: var(--accent); font-weight: 700; }
+.photo-preview { display: grid; place-items: center; min-height: 160px; border: 1px dashed var(--line); border-radius: 10px; padding: 8px; }
+.photo-preview img { max-width: 100%; max-height: 280px; border-radius: 8px; object-fit: contain; }
 </style>
