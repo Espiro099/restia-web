@@ -62,4 +62,13 @@ describe('Cabeceras de seguridad del panel', () => {
     expect(SECURITY_HEADERS['X-Frame-Options']).toBe('DENY')
     expect(SECURITY_HEADERS['X-Content-Type-Options']).toBe('nosniff')
   })
+
+  it('render.yaml publica las mismas cabeceras que security-headers.js', () => {
+    const yaml = readFileSync('render.yaml', 'utf8')
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+      const block = new RegExp(`name: ${name}\\s+value: "?([^"\\n]+)"?`).exec(yaml)
+      expect(block, name).not.toBeNull()
+      expect(block[1].trim()).toBe(value)
+    }
+  })
 })
