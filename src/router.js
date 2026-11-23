@@ -31,7 +31,10 @@ const moduleRoutes = MODULES.map((m) => ({
 }))
 
 export const routes = [
-  { path: '/', name: 'login', component: LandingView, meta: { public: true } },
+  // Sitio de La Mesa para clientes: sin sesión, como el menú del QR.
+  { path: '/', name: 'sitio', component: () => import('./views/SiteView.vue'), meta: { anonymous: true } },
+  // Acceso del personal al panel (enlace en el pie del sitio).
+  { path: '/acceso', name: 'login', component: LandingView, meta: { public: true } },
   // Menú del QR de cada mesa (`/m#token`): para clientes, sin sesión. Es la URL que imprime la API.
   { path: '/m', name: 'menu-publico', component: () => import('./views/PublicMenuView.vue'), meta: { anonymous: true } },
   {
