@@ -45,8 +45,16 @@ textarea.field { resize: vertical; }
 
 .notice-ok { background: #e6f4ea; color: var(--ok); padding: 10px 14px; border-radius: 10px; margin: 0 0 14px; }
 .form { display: grid; gap: 12px; }
-.form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.form fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; margin: 0; }
+/* Nada del formulario debe ensanchar el diálogo: un fieldset toma por defecto el ancho de su contenido y un
+   select, el de su opción más larga (los regímenes fiscales). */
+.form > *, .form label { min-width: 0; }
+.form :is(input, select, textarea) { max-width: 100%; min-width: 0; }
+.form .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.form fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; margin: 0; min-width: 0; }
+.form-buttons { flex-wrap: wrap; }
+@media (max-width: 520px) {
+  .form .row { grid-template-columns: minmax(0, 1fr); }
+}
 .form legend { font-size: .85rem; color: var(--muted); padding: 0 4px; }
 .form .check { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: .92rem; }
 .help { margin: 0; color: var(--muted); font-size: .88rem; line-height: 1.45; }
