@@ -1,11 +1,12 @@
 :root {
-  --bg: #f6f4fb;
+  /* Colores de la marca Restia: la flama del logo (acento) sobre crema y café. */
+  --bg: #faf5ef;
   --surface: #ffffff;
-  --text: #1d1b26;
-  --muted: #5d5a6b;
-  --line: #dcd8e8;
-  --accent: #5b3fb3;
-  --accent-soft: #ece6fb;
+  --text: #2b1810;
+  --muted: #6b5d55;
+  --line: #eaded3;
+  --accent: #b4441a;
+  --accent-soft: #fbeadf;
   --danger: #b3261e;
   --danger-soft: #fbe9e7;
   --ok: #1e6b3a;

@@ -39,7 +39,7 @@ async function logout() {
   <div class="shell" :class="{ open: menuOpen }">
     <aside class="side">
       <div class="side-top">
-        <RouterLink :to="{ name: 'inicio' }" class="brand"><span class="brand-mark" aria-hidden="true">R</span> Restia</RouterLink>
+        <RouterLink :to="{ name: 'inicio' }" class="brand"><img src="../assets/marca/restia-logo.png" alt="Restia" width="130" height="48" /></RouterLink>
         <button class="menu-toggle" type="button" :aria-expanded="menuOpen" aria-controls="panel-nav" @click="menuOpen = !menuOpen">
           {{ menuOpen ? 'Cerrar' : 'Menú' }}
         </button>
@@ -82,7 +82,7 @@ async function logout() {
 .side { background: var(--surface); border-right: 1px solid var(--line); padding: 18px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .side-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; color: var(--text); text-decoration: none; }
-.brand-mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 800; }
+.brand img { display: block; height: 36px; width: auto; }
 .menu-toggle { display: none; }
 nav { display: grid; gap: 2px; }
 nav h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 16px 10px 6px; }

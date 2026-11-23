@@ -6,7 +6,7 @@ import { MODULES } from '../modules.js'
 <template>
   <div class="page">
     <header class="top">
-      <div class="brand"><span class="brand-mark" aria-hidden="true">R</span> Restia</div>
+      <div class="brand"><img src="../assets/marca/restia-logo.png" alt="Restia" width="130" height="48" /></div>
       <span class="status">Panel web · en desarrollo</span>
     </header>
 

@@ -3,10 +3,7 @@
 .page { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
 header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; letter-spacing: .2px; }
-.brand-mark {
-  width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
-  background: var(--accent); color: #fff; font-weight: 800;
-}
+.brand img { display: block; height: 44px; width: auto; }
 .status { font-size: .8rem; padding: 6px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
 .hero { display: grid; grid-template-columns: 1.2fr .8fr; gap: 40px; align-items: center; padding: 40px 0 56px; }
