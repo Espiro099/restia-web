@@ -42,6 +42,24 @@ export const CANCEL_REASONS = {
 
 export const PERIODICITIES = { DAILY: 'Diaria', WEEKLY: 'Semanal', BIWEEKLY: 'Quincenal', MONTHLY: 'Mensual', BIMONTHLY: 'Bimestral' }
 
+/** Periodos sugeridos para la factura global, terminando antes de hoy. La API valida contra la periodicidad. */
+export function globalPeriods(today = new Date()) {
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const y = today.getFullYear()
+  const m = today.getMonth()
+  const d = today.getDate()
+  const yesterday = new Date(y, m, d - 1)
+  // Semana pasada de lunes a domingo, recortada al mes del domingo (la global semanal no cruza meses).
+  const lastSunday = new Date(y, m, d - (today.getDay() || 7))
+  const monday = new Date(lastSunday.getFullYear(), lastSunday.getMonth(), lastSunday.getDate() - 6)
+  const weekStart = monday.getMonth() === lastSunday.getMonth() ? monday : new Date(lastSunday.getFullYear(), lastSunday.getMonth(), 1)
+  return [
+    { key: 'day', label: 'Ayer', from: iso(yesterday), to: iso(yesterday) },
+    { key: 'week', label: 'Semana pasada', from: iso(weekStart), to: iso(lastSunday) },
+    { key: 'month', label: 'Mes pasado', from: iso(new Date(y, m - 1, 1)), to: iso(new Date(y, m, 0)) },
+  ]
+}
+
 export const RFC_PATTERN = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/u
 
 /** Qué se ofrece según el estado (Invoice::EDITABLE y CANCELLABLE). */
@@ -78,6 +96,7 @@ const MESSAGES = {
   INVOICE_CHECK_NOT_ELIGIBLE: 'La cuenta todavía no se puede facturar (debe estar pagada).',
   INVOICE_INVALID_STATE: 'La factura cambió de estado. Se recargó la lista.',
   INVOICE_REPLACEMENT_REQUIRED: 'El motivo 01 necesita la factura que la sustituye, ya timbrada.',
+  INVOICE_BATCH_EMPTY: 'En ese periodo no hay cuentas pagadas sin factura.',
 }
 
 export function invoicesErrorText(error) {
@@ -112,6 +131,33 @@ export function invoicesApi(api = defaultApi) {
       { headers: { ...key(), ...ifMatch(inv.version) } }),
     reconcile: (b, inv) => api.post(at(b, `/${inv.id}/reconcile`), {}),
     fileUrl: (b, inv, kind) => `${API_PREFIX}${at(b, `/${inv.id}/${kind}`)}`,
+
+    // --- Factura global (F-6, F-7) ---
+    batches: (b, page = 1) => api.get(`/branches/${encodeURIComponent(b)}/invoice-batches?page=${page}&perPage=25`),
+    createBatch: (b, periodFrom, periodTo) =>
+      api.post(`/branches/${encodeURIComponent(b)}/invoice-batches`, { periodFrom, periodTo }, { headers: key() }),
+    excludeChecks: (b, batch, checkIds, reason) => api.post(`/branches/${encodeURIComponent(b)}/invoice-batches/${batch.id}/exclude-checks`,
+      { checkIds, reason: reason.trim() }, { headers: { ...key(), ...ifMatch(batch.version) } }),
+    /** Facturas globales de la sucursal, por id, para mostrar el estado de cada lote. */
+    async globalInvoices(b) {
+      const r = await api.get(`${at(b)}?scope=GLOBAL&page=1&perPage=100`)
+      return new Map(r.data.map((i) => [i.id, i]))
+    },
+    /** Cuentas de un lote: se buscan día por día en su periodo (máximo dos meses). */
+    async batchChecks(b, batch) {
+      const ids = new Set(batch.checkIds)
+      const days = []
+      for (let d = new Date(`${batch.periodFrom}T12:00:00`); d <= new Date(`${batch.periodTo}T12:00:00`); d.setDate(d.getDate() + 1)) {
+        days.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+      }
+      const found = []
+      for (let i = 0; i < days.length; i += 6) {
+        const chunk = await Promise.all(days.slice(i, i + 6).map((day) =>
+          api.get(`/branches/${encodeURIComponent(b)}/checks?businessDate=${day}&page=1&perPage=100`).then((r) => r.data)))
+        found.push(...chunk.flat().filter((c) => ids.has(c.id)))
+      }
+      return found
+    },
 
     // --- Emisores (solo administración) ---
     issuers: () => api.get('/fiscal-issuers?page=1&perPage=100').then((r) => r.data),
