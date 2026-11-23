@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSession } from '../stores/session.js'
 import { GROUPS, MODULES, ROLE_NAMES } from '../modules.js'
+import NoticeBell from '../components/NoticeBell.vue'
 
 const session = useSession()
 const router = useRouter()
@@ -68,6 +69,7 @@ async function logout() {
           <span class="name">{{ session.user?.name }}</span>
           <span class="role">{{ role }}</span>
         </div>
+        <NoticeBell v-if="session.panelAccess" :key="session.user?.id" />
         <button type="button" class="logout" :disabled="leaving" @click="logout">{{ leaving ? 'Saliendo…' : 'Salir' }}</button>
       </header>
       <main class="content">
