@@ -182,7 +182,7 @@ function date(iso) {
             <option value="INACTIVE">Inactivas</option>
           </select>
         </label>
-        <span class="count">{{ tables.length }} mesas · {{ seats }} lugares activos</span>
+        <span class="count">{{ tables.length }} {{ tables.length === 1 ? 'mesa' : 'mesas' }} · {{ seats }} {{ seats === 1 ? 'lugar activo' : 'lugares activos' }}</span>
       </div>
       <p v-if="notice && !dialog" class="notice-ok" role="status">{{ notice }}</p>
 

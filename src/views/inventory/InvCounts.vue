@@ -115,7 +115,7 @@ function time(iso) {
         <table class="data-table">
           <tbody>
             <tr v-for="c in history" :key="c.id">
-              <td><span class="cell-main">{{ time(c.createdAt) }}</span><span class="cell-sub">{{ c.lines.length }} insumos contados</span></td>
+              <td><span class="cell-main">{{ time(c.createdAt) }}</span><span class="cell-sub">{{ c.lines.length }} {{ c.lines.length === 1 ? 'insumo contado' : 'insumos contados' }}</span></td>
               <td><span class="pill" :class="COUNT_STATUS[c.status]?.tone">{{ COUNT_STATUS[c.status]?.label }}</span></td>
             </tr>
           </tbody>

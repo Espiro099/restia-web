@@ -2,6 +2,8 @@
 // y el router salen de esta lista. `phase` es la fase del plan de seguimiento en que se construye.
 
 export const MODULES = [
+  { key: 'sucursal', title: 'Sucursal', permission: 'branches.update', group: 'Configuración', phase: '5',
+    description: 'Nombre, dirección y horario de reservas.' },
   { key: 'personal', title: 'Personal', permission: 'members.read', group: 'Configuración', phase: '2.2',
     description: 'Empleados, roles, bajas y enlaces de contraseña.' },
   { key: 'menu', title: 'Menú', permission: 'menu.read', group: 'Configuración', phase: '2.3',

@@ -27,7 +27,16 @@ const VERBS = {
   password_setup_link_created: 'enlace de contraseña', sessions_revoked: 'sesiones cerradas', uuid_adopted: 'adopción',
   fiscal_issuer_changed: 'cambio de emisor', movement_created: 'movimiento', lines_replaced: 'conteo capturado', replanned: 'replaneada',
   lookup_failed: 'búsqueda fallida', cancellation_requested: 'cancelación solicitada', reconcile_requested: 'conciliación solicitada',
-  superseded: 'reemplazada',
+  superseded: 'reemplazada', closing_started: 'inicio de corte', closing_cancelled: 'corte cancelado',
+  close_requested: 'cierre solicitado', completed: 'terminado', started: 'inicio', ready: 'listo', delivered: 'entrega',
+  voided: 'anulación', returned_to_queue: 'regresó a la cola', table_released: 'mesa liberada', tables_added: 'mesas agregadas',
+  reconciled: 'conciliación', failed: 'falla', offline: 'sin conexión', route_missing: 'sin ruta de impresión',
+  adjust: 'ajuste', adjustment_applied: 'ajuste aplicado', adjustment_reverted: 'ajuste revertido', record_waste: 'merma',
+  count_applied: 'conteo aplicado', difference_detected: 'diferencia detectada', low_stock: 'existencia baja',
+  food_safety_blocked: 'bloqueo sanitario', food_safety_unblocked: 'desbloqueo sanitario', forgotten: 'datos borrados',
+  csd_updated: 'CSD actualizado', discarded: 'descartada', stamp_requested: 'timbrado solicitado', stamped: 'timbrada',
+  stamp_failed: 'timbrado rechazado', stamp_unknown: 'timbrado sin confirmar', cancellation_rejected: 'cancelación rechazada',
+  override: 'excepción autorizada',
 }
 
 /** "product.status_changed" → "Producto: cambio de estado". Un código desconocido se muestra tal cual. */
