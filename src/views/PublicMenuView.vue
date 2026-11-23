@@ -60,8 +60,9 @@ function jump(anchor) {
   <div class="public">
     <header class="pm-top">
       <div class="inner">
+        <img src="../assets/marca/lamesa-logo.png" alt="La Mesa" class="logo" width="146" height="80" />
         <p class="eyebrow">{{ context ? `Mesa ${context.tableNumber}` : 'Menú' }}</p>
-        <h1>{{ context?.restaurantName ?? 'Restia' }}</h1>
+        <h1>{{ context?.restaurantName ?? 'La Mesa' }}</h1>
       </div>
       <nav v-if="sections.length > 1" class="cats" aria-label="Categorías">
         <a v-for="s in sections" :key="s.anchor" :href="`#${token}`" @click.prevent="jump(s.anchor)">{{ s.category }}</a>
@@ -103,6 +104,7 @@ function jump(anchor) {
 .inner { max-width: 680px; margin: 0 auto; padding: 0 16px; }
 .pm-top { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
 .pm-top .inner { padding-top: 18px; padding-bottom: 10px; }
+.logo { display: block; height: 56px; width: auto; margin-bottom: 6px; }
 .eyebrow { margin: 0; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--accent); }
 h1 { margin: 2px 0 0; font-size: 1.5rem; }
 .cats { display: flex; gap: 8px; overflow-x: auto; padding: 4px 16px 12px; max-width: 680px; margin: 0 auto; scrollbar-width: none; }
