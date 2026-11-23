@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { menuSections, priceText, publicErrorText, publicMenuApi, tokenFromHash } from '../lib/publicMenu.js'
+import { imageSrc } from '../lib/productImage.js'
 
 // Página que abre el cliente al escanear el QR de su mesa: solo lectura, sin cuenta ni cookies.
 const props = defineProps({ api: { type: Object, default: null } })
@@ -77,7 +78,9 @@ function jump(anchor) {
         <p v-if="!sections.length" class="state">Por ahora no hay platillos disponibles.</p>
         <section v-for="s in sections" :id="s.anchor" :key="s.anchor" class="section">
           <h2>{{ s.category }}</h2>
-          <article v-for="p in s.items" :key="p.id" class="dish" :class="{ out: p.availability === 'SOLD_OUT' }">
+          <article v-for="p in s.items" :key="p.id" class="dish" :class="{ out: p.availability === 'SOLD_OUT', 'with-photo': imageSrc(p.imageUrl) }">
+            <!-- Decorativa: el nombre del platillo va justo al lado. -->
+            <img v-if="imageSrc(p.imageUrl)" :src="imageSrc(p.imageUrl)" alt="" class="dish-photo" width="88" height="88" loading="lazy" />
             <div class="dish-head">
               <h3>{{ p.name }}</h3>
               <span class="price">{{ priceText(p.price) }}</span>
@@ -109,6 +112,10 @@ h1 { margin: 2px 0 0; font-size: 1.5rem; }
 h2 { margin: 0 0 10px; font-size: 1.1rem; }
 .dish { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
 .dish.out { opacity: .6; }
+.dish.with-photo { display: grid; grid-template-columns: 88px minmax(0, 1fr); column-gap: 14px; }
+.dish.with-photo > :not(.dish-photo) { grid-column: 2; }
+.dish-photo { grid-row: 1 / span 4; width: 88px; height: 88px; border-radius: 10px; object-fit: cover; background: var(--accent-soft); }
+.dish.out .dish-photo { filter: grayscale(1); }
 .dish-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
 h3 { margin: 0; font-size: 1rem; }
 .price { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }

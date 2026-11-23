@@ -101,6 +101,13 @@ export function catalogApi(api = defaultApi) {
     productStatus: (branchId, p, value, reason) => status(branchId, 'products', p, value, reason),
     availability: (branchId, p, value) => api.post(at(branchId, `products/${p.id}/availability`), { availability: value }),
     routes: (branchId, p, routes) => api.put(at(branchId, `products/${p.id}/routes`), { routes }, ifMatch(p.version)),
+    uploadImage: (branchId, p, blob) => {
+      const form = new FormData()
+      form.append('image', blob, 'foto.jpg')
+      return api.putForm(at(branchId, `products/${p.id}/image`), form, ifMatch(p.version))
+    },
+    // Quitar la foto es un PATCH con imageUrl null (el contrato no usa DELETE).
+    removeImage: (branchId, p) => api.patch(at(branchId, `products/${p.id}`), { imageUrl: null }, ifMatch(p.version)),
 
     createStation: (branchId, body) => api.post(at(branchId, 'stations'), body),
     updateStation: (branchId, s, changes) => api.patch(at(branchId, `stations/${s.id}`), changes, ifMatch(s.version)),
