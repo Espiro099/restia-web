@@ -11,6 +11,8 @@ const props = defineProps({
   /** Texto de una marca del eje y a partir de su valor. */
   tick: { type: Function, default: (v) => String(v) },
   height: { type: Number, default: 200 },
+  /** Resalta la última barra (hoy) y deja las demás en un tono más claro, como el Inicio del Figma. */
+  highlightLast: { type: Boolean, default: false },
 })
 
 // El ancho es el del contenedor, medido: así el alto queda fijo en píxeles y el texto no crece ni se encoge.
@@ -79,7 +81,7 @@ const tipStyle = computed(() => {
              @mouseenter="active = i" @focus="active = i" @blur="active = -1">
             <!-- Zona de clic más grande que la barra. -->
             <rect :x="PAD.left + i * slot" :y="PAD.top" :width="slot" :height="plotH" class="hit" />
-            <path :d="barPath(i, item.value)" class="mark" />
+            <path :d="barPath(i, item.value)" class="mark" :class="{ soft: highlightLast && i < items.length - 1 }" />
           </g>
         </g>
       </svg>
@@ -95,6 +97,7 @@ svg { width: 100%; display: block; overflow: visible; }
 .grid { stroke: var(--line); stroke-width: 1; }
 .axis { fill: var(--muted); font-size: 13px; }
 .mark { fill: var(--accent); }
+.mark.soft { fill: #e98637; }
 .bar .hit { fill: transparent; }
 .bar.on .hit { fill: var(--accent-soft); opacity: .6; }
 .bar:focus { outline: none; }

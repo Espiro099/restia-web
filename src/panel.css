@@ -1,35 +1,39 @@
 /* Piezas comunes de los módulos del panel: encabezado, botones, tablas, formularios y estados.
    Van en un archivo (no en línea) por la CSP. */
 .mod-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.mod-head h1 { margin: 0 0 4px; font-size: 1.6rem; }
+.mod-head h1 { margin: 0 0 4px; font-size: 1.8rem; font-weight: 700; letter-spacing: -.01em; }
 .mod-lead { margin: 0 0 18px; color: var(--muted); }
 
-.btn { font: inherit; font-size: .85rem; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap; }
+.btn { font: inherit; font-size: .85rem; font-weight: 600; padding: 7px 13px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap; transition: background-color .15s ease, border-color .15s ease; }
+.btn:hover:not(:disabled) { border-color: #d9c9b8; background: #fdfbf8; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; padding: 9px 16px; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; padding: 9px 16px; border-radius: 10px; }
+.btn-primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
 .btn-danger { color: var(--danger); }
 .btn-danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; padding: 9px 16px; }
 
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
 .tabs button { font: inherit; font-size: .95rem; padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); cursor: pointer; white-space: nowrap; }
-.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tabs button[aria-selected="true"] { color: var(--accent-strong); border-bottom-color: var(--accent); font-weight: 700; }
 .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 .toolbar { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .toolbar label, .form label { display: grid; gap: 6px; font-size: .85rem; color: var(--muted); }
 .toolbar label.check { display: flex; align-items: center; gap: 8px; color: var(--text); padding-bottom: 9px; }
 .toolbar .count { color: var(--muted); font-size: .85rem; margin-left: auto; }
-.field { font: inherit; color: var(--text); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+.field { font: inherit; color: var(--text); padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.field:hover { border-color: #d9c9b8; }
 .field:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 textarea.field { resize: vertical; }
 
-.box { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
 .box + .box { margin-top: 14px; }
-.box h2 { margin: 0; padding: 12px 14px; font-size: .8rem; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.box h2 { margin: 0; padding: 14px 16px; font-size: .95rem; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--divider); }
 .data-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
-.data-table th { text-align: left; font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--line); font-weight: 600; }
-.data-table td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.data-table th { text-align: left; font-size: .78rem; color: var(--muted); padding: 12px 16px; border-bottom: 1px solid var(--divider); font-weight: 700; }
+.data-table td { padding: 12px 16px; border-bottom: 1px solid var(--divider); vertical-align: top; }
+.data-table tbody tr:hover td { background: #fdfbf8; }
 .data-table tr:last-child td { border-bottom: 0; }
 .data-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .data-table .actions { text-align: right; }
@@ -38,12 +42,12 @@ textarea.field { resize: vertical; }
 .cell-sub { display: block; color: var(--muted); font-size: .84rem; overflow-wrap: anywhere; }
 .empty-row { text-align: center; color: var(--muted); padding: 28px !important; }
 
-.pill { display: inline-block; font-size: .76rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; background: #e6f4ea; color: var(--ok); margin: 0 4px 4px 0; }
+.pill { display: inline-block; font-size: .72rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; background: var(--ok-soft); color: var(--ok); margin: 0 4px 4px 0; }
 .pill.muted { background: var(--bg); color: var(--muted); }
 .pill.warn { background: #fff4e0; color: #8a4b00; }
-.pill.accent { background: var(--accent-soft); color: var(--accent); }
+.pill.accent { background: var(--accent-soft); color: var(--accent-strong); }
 
-.notice-ok { background: #e6f4ea; color: var(--ok); padding: 10px 14px; border-radius: 10px; margin: 0 0 14px; }
+.notice-ok { background: var(--ok-soft); color: var(--ok); padding: 10px 14px; border-radius: 10px; margin: 0 0 14px; font-weight: 600; }
 .form { display: grid; gap: 12px; }
 /* Nada del formulario debe ensanchar el diálogo: un fieldset toma por defecto el ancho de su contenido y un
    select, el de su opción más larga (los regímenes fiscales). */

@@ -16,6 +16,9 @@ const groups = computed(() =>
   GROUPS.map((g) => ({ name: g, modules: visible.value.filter((m) => m.group === g) })).filter((g) => g.modules.length),
 )
 const role = computed(() => ROLE_NAMES[session.currentMembership?.role] ?? session.currentMembership?.role ?? '')
+// Título del encabezado (Figma 02 · Panel): el del módulo abierto o "Inicio".
+const pageTitle = computed(() => MODULES.find((m) => m.key === route.meta.module)?.title ?? 'Inicio')
+const today = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date()).replace('.', '')
 
 // En pantallas angostas el menú se cierra al navegar.
 watch(() => route.fullPath, () => { menuOpen.value = false })
@@ -40,7 +43,7 @@ async function logout() {
   <div class="shell" :class="{ open: menuOpen }">
     <aside class="side">
       <div class="side-top">
-        <RouterLink :to="{ name: 'inicio' }" class="brand"><img src="../assets/marca/restia-logo.png" alt="Restia" width="130" height="48" /></RouterLink>
+        <RouterLink :to="{ name: 'inicio' }" class="brand"><img src="../assets/marca/restia-logo-blanco.png" alt="Restia" width="130" height="48" /></RouterLink>
         <button class="menu-toggle" type="button" :aria-expanded="menuOpen" aria-controls="panel-nav" @click="menuOpen = !menuOpen">
           {{ menuOpen ? 'Cerrar' : 'Menú' }}
         </button>
@@ -54,23 +57,29 @@ async function logout() {
           </RouterLink>
         </section>
       </nav>
+      <div class="who">
+        <span class="name">{{ session.user?.name }}</span>
+        <span class="role">{{ role }}<template v-if="session.currentMembership"> · {{ session.currentMembership.branch.name }}</template></span>
+      </div>
     </aside>
 
     <div class="main">
       <header class="bar">
-        <label v-if="session.branches.length > 1" class="branch">
-          <span>Sucursal</span>
-          <select :value="session.branchId" @change="changeBranch">
-            <option v-for="b in session.branches" :key="b.id" :value="b.id">{{ b.name }}</option>
-          </select>
-        </label>
-        <p v-else class="branch-name">{{ session.currentMembership?.branch?.name }}</p>
-        <div class="who">
-          <span class="name">{{ session.user?.name }}</span>
-          <span class="role">{{ role }}</span>
+        <!-- El título visible; cada pantalla conserva su propio h1 para el lector de pantalla. -->
+        <p class="page-title" aria-hidden="true">{{ pageTitle }}</p>
+        <div class="bar-end">
+          <label v-if="session.branches.length > 1" class="branch">
+            <span class="sr-only">Sucursal</span>
+            <select :value="session.branchId" @change="changeBranch">
+              <option v-for="b in session.branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
+          </label>
+          <p v-else class="branch-name">{{ session.currentMembership?.branch?.name }}</p>
+          <span class="dot" aria-hidden="true">·</span>
+          <p class="date">{{ today }}</p>
+          <NoticeBell v-if="session.panelAccess" :key="session.user?.id" />
+          <button type="button" class="logout" :disabled="leaving" @click="logout">{{ leaving ? 'Saliendo…' : 'Salir' }}</button>
         </div>
-        <NoticeBell v-if="session.panelAccess" :key="session.user?.id" />
-        <button type="button" class="logout" :disabled="leaving" @click="logout">{{ leaving ? 'Saliendo…' : 'Salir' }}</button>
       </header>
       <main class="content">
         <RouterView />
@@ -80,39 +89,51 @@ async function logout() {
 </template>
 
 <style scoped>
-.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
-.side { background: var(--surface); border-right: 1px solid var(--line); padding: 18px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-.side-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; color: var(--text); text-decoration: none; }
-.brand img { display: block; height: 36px; width: auto; }
+.shell { display: grid; grid-template-columns: 210px minmax(0, 1fr); min-height: 100vh; }
+.side { background: var(--side); color: #fff; padding: 19px 11px 22px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
+.side-top { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; margin-bottom: 18px; }
+.brand { display: block; }
+.brand img { display: block; height: 46px; width: auto; }
 .menu-toggle { display: none; }
-nav { display: grid; gap: 2px; }
-nav h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 16px 10px 6px; }
-.nav-link { display: block; padding: 8px 10px; border-radius: 8px; color: var(--text); text-decoration: none; font-size: .95rem; }
-.nav-link:hover { background: var(--bg); }
-.nav-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-.nav-link:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+nav { display: grid; gap: 4px; }
+nav section { display: grid; gap: 4px; }
+nav h2 { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--side-text); opacity: .75; margin: 14px 12px 4px; }
+.nav-link { display: block; padding: 9px 12px; border-radius: 6px; color: #fff; text-decoration: none; font-size: .82rem; font-weight: 700; transition: background-color .15s ease; }
+.nav-link:hover { background: rgba(255, 255, 255, .07); }
+.nav-link.active { background: var(--accent); }
+.nav-link:focus-visible, .menu-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.who { margin-top: auto; padding: 22px 12px 0; display: grid; gap: 3px; line-height: 1.25; }
+.who .name { font-weight: 700; font-size: .875rem; }
+.who .role { color: var(--side-text); font-size: .7rem; }
 
 .main { min-width: 0; display: flex; flex-direction: column; }
-.bar { display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
-.branch { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); }
-.branch select { font: inherit; color: var(--text); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
-.branch-name { margin: 0; font-weight: 600; }
-.who { margin-left: auto; display: grid; text-align: right; line-height: 1.2; }
-.who .name { font-weight: 600; font-size: .9rem; }
-.who .role { color: var(--muted); font-size: .8rem; }
-.logout { font: inherit; font-size: .9rem; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+.bar { display: flex; align-items: center; gap: 16px; min-height: 79px; padding: 12px 30px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.page-title { margin: 0; font-size: 1.55rem; font-weight: 700; color: var(--text); letter-spacing: -.01em; }
+.bar-end { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: .78rem; color: var(--muted); }
+.bar-end p { margin: 0; }
+.dot { color: var(--muted); }
+.branch select { font: inherit; font-size: .8rem; color: var(--text); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+.branch-name { color: var(--muted); }
+.logout { font: inherit; font-size: .8rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+.logout:hover:not(:disabled) { border-color: #d9c9b8; }
 .logout:disabled { opacity: .5; cursor: progress; }
-.content { padding: 24px; max-width: 1180px; width: 100%; }
+.bar :is(button, select):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.content { padding: 30px; max-width: 1240px; width: 100%; }
+/* El título va en el encabezado: el h1 de cada módulo queda solo para el lector de pantalla. */
+.content :deep(.mod-head h1) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px; }
-  .side-top { margin-bottom: 0; }
-  .menu-toggle { display: inline-block; font: inherit; font-size: .9rem; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
-  nav { display: none; margin-top: 10px; }
-  .shell.open nav { display: grid; }
-  .bar { flex-wrap: wrap; padding: 10px 16px; gap: 10px; }
+  .side { position: static; height: auto; padding: 12px 14px; }
+  .side-top { margin-bottom: 0; padding: 0; }
+  .brand img { height: 36px; }
+  .menu-toggle { display: inline-block; font: inherit; font-size: .85rem; font-weight: 700; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, .3); background: transparent; color: #fff; cursor: pointer; }
+  nav, .who { display: none; }
+  .shell.open nav { display: grid; margin-top: 10px; }
+  .shell.open .who { display: grid; padding-top: 14px; }
+  .bar { flex-wrap: wrap; padding: 12px 16px; min-height: 0; gap: 10px; }
+  .page-title { font-size: 1.25rem; }
+  .bar-end { margin-left: 0; width: 100%; flex-wrap: wrap; gap: 8px; }
   .content { padding: 16px; }
 }
 </style>
