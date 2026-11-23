@@ -30,4 +30,5 @@ export const api = {
   post: guarded(base.post),
   patch: guarded(base.patch),
   put: guarded(base.put),
+  putForm: guarded(base.putForm),
 }

@@ -41,7 +41,11 @@ export function createApi({ fetch: doFetch = globalThis.fetch.bind(globalThis), 
     if (!response.ok) throw new ApiError(response.status, null)
   }
 
-  async function request(method, path, { body, headers = {} } = {}) {
+  /**
+   * `form` (FormData) manda multipart y deja que el navegador ponga el boundary. `withEtag` devuelve
+   * { data, etag } para operaciones que luego piden If-Match sobre un recurso que no trae `version`.
+   */
+  async function request(method, path, { body, form, headers = {}, withEtag = false } = {}) {
     if (MUTATING.has(method)) await ensureCsrf()
     const token = readCookie('XSRF-TOKEN', cookies())
     let response
@@ -51,11 +55,11 @@ export function createApi({ fetch: doFetch = globalThis.fetch.bind(globalThis), 
         credentials: 'include',
         headers: {
           Accept: 'application/json',
-          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          ...(body !== undefined && !form ? { 'Content-Type': 'application/json' } : {}),
           ...(token && MUTATING.has(method) ? { 'X-XSRF-TOKEN': token } : {}),
           ...headers,
         },
-        body: body !== undefined ? JSON.stringify(body) : undefined,
+        body: form ?? (body !== undefined ? JSON.stringify(body) : undefined),
       })
     } catch {
       throw new ApiError(0, null)
@@ -63,7 +67,7 @@ export function createApi({ fetch: doFetch = globalThis.fetch.bind(globalThis), 
     if (response.status === 204) return null
     const data = await response.json().catch(() => null)
     if (!response.ok) throw new ApiError(response.status, data)
-    return data
+    return withEtag ? { ...data, etag: response.headers?.get?.('ETag') ?? null } : data
   }
 
   return {
@@ -71,5 +75,6 @@ export function createApi({ fetch: doFetch = globalThis.fetch.bind(globalThis), 
     post: (path, body, options) => request('POST', path, { ...options, body }),
     patch: (path, body, options) => request('PATCH', path, { ...options, body }),
     put: (path, body, options) => request('PUT', path, { ...options, body }),
+    putForm: (path, form, options) => request('PUT', path, { ...options, form }),
   }
 }
