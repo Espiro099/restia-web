@@ -61,7 +61,8 @@ export const useSession = defineStore('session', {
     },
     /** ¿Ve el módulo con ese permiso en la sucursal elegida? */
     canOpen() {
-      return (permission) => this.panelAccess && this.canHere(permission)
+      // Un módulo sin permiso propio (null) basta con tener acceso al panel.
+      return (permission) => this.panelAccess && (permission === null || this.canHere(permission))
     },
   },
   actions: {

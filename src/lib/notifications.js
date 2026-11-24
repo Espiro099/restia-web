@@ -50,6 +50,11 @@ export function notificationsApi(api = defaultApi) {
       const r = await api.get(`${at(branchId)}?page=1&perPage=10`)
       return { items: r.data ?? [], unread: r.meta?.unreadCount ?? 0 }
     },
+    /** Una página de avisos; con `unread`, solo los que faltan por leer. */
+    async page(branchId, { unread = false, page = 1 } = {}) {
+      const r = await api.get(`${at(branchId)}?page=${page}&perPage=30${unread ? '&unread=true' : ''}`)
+      return { items: r.data ?? [], unread: r.meta?.unreadCount ?? 0, lastPage: r.meta?.pagination?.lastPage ?? 1 }
+    },
     read: (branchId, id) => api.post(at(branchId, `/${encodeURIComponent(id)}/read`)),
     readAll: (branchId) => api.post(at(branchId, '/read-all')),
   }

@@ -136,7 +136,8 @@ describe('panel', () => {
   it('el menú muestra solo los módulos con permiso en la sucursal elegida', async () => {
     const { wrapper } = await mountAt('/panel')
     const links = wrapper.findAll('nav .nav-link').map((l) => l.text())
-    expect(links).toEqual(['Inicio', 'Personal', 'Menú', 'Reportes'])
+    // Orden del Figma; Configuración siempre está (ahí viven Avisos y los ajustes con permiso).
+    expect(links).toEqual(['Inicio', 'Menú', 'Personal', 'Reportes', 'Configuración'])
     expect(wrapper.text()).toContain('Hola, Eduardo')
     expect(wrapper.text()).toContain('Administrador')
   })

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useSession } from '../stores/session.js'
-import { MODULES } from '../modules.js'
+import { modulesIn } from '../modules.js'
 import { money } from '../lib/reports.js'
 import { activeOrders, changeText, clock, dashboardApi, salesSummary, STAGE_TEXT, stockLevel } from '../lib/dashboard.js'
 import BarChart from '../components/BarChart.vue'
@@ -13,7 +13,8 @@ const props = defineProps({ api: { type: Object, default: null } })
 const calls = props.api ?? dashboardApi()
 const session = useSession()
 
-const modules = computed(() => MODULES.filter((m) => session.canOpen(m.permission)))
+// Sin tarjetas, el inicio muestra los módulos del menú principal que puede abrir.
+const modules = computed(() => modulesIn('main', session.canOpen).filter((m) => m.permission !== null))
 const firstName = computed(() => (session.user?.name ?? '').split(' ')[0])
 const can = (p) => session.canOpen(p)
 const showSales = computed(() => can('reports.read'))

@@ -72,9 +72,10 @@ export function activeOrders(units) {
     const u = row.unit ?? row
     const stage = STAGE[u.status]
     if (stage === undefined) continue
-    const o = orders.get(u.orderId) ?? { orderId: u.orderId, tables: row.tableNumbers ?? [], createdAt: u.createdAt, stage, units: 0 }
+    const o = orders.get(u.orderId) ?? { orderId: u.orderId, tables: row.tableNumbers ?? [], createdAt: u.createdAt, stage, units: 0, products: [] }
     o.stage = Math.min(o.stage, stage)
     o.units += 1
+    if (row.productName) o.products.push(row.productName)
     if (u.createdAt < o.createdAt) o.createdAt = u.createdAt
     orders.set(u.orderId, o)
   }

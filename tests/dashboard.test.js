@@ -73,7 +73,7 @@ describe('Inicio: pantalla', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
-    router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { template: '<p />' } }, { path: '/inventario', name: 'inventario', component: { template: '<p />' } }, { path: '/menu', name: 'menu', component: { template: '<p />' } }] })
+    router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { template: '<p />' } }, { path: '/inventario', name: 'inventario', component: { template: '<p />' } }, { path: '/menu', name: 'menu', component: { template: '<p />' } }, { path: '/configuracion', name: 'configuracion', component: { template: '<p />' } }] })
   })
 
   async function mountWith(permissions, calls) {

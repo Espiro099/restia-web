@@ -20,6 +20,10 @@ const BUILT = {
   auditoria: () => import('./views/AuditView.vue'),
   facturacion: () => import('./views/InvoicesView.vue'),
   inventario: () => import('./views/InventoryView.vue'),
+  ventas: () => import('./views/SalesView.vue'),
+  comandas: () => import('./views/OrdersView.vue'),
+  configuracion: () => import('./views/SettingsView.vue'),
+  avisos: () => import('./views/NoticesView.vue'),
 }
 
 // Cada módulo es una ruta hija de /panel con su permiso de lectura.
@@ -53,7 +57,8 @@ export async function guard(to, session) {
   if (to.meta.public) return signedIn ? { name: 'inicio' } : true
   if (!signedIn) return { name: 'login', query: to.fullPath !== '/panel' ? { volver: to.fullPath } : {} }
   // Sin el permiso en la sucursal elegida (por ejemplo, al cambiar de sucursal), de vuelta al inicio.
-  if (to.meta.permission && !session.canOpen(to.meta.permission)) return { name: 'inicio' }
+  // Los módulos sin permiso propio (Configuración, Avisos) piden igual acceso al panel.
+  if ((to.meta.module || to.meta.permission) && !session.canOpen(to.meta.permission ?? null)) return { name: 'inicio' }
   return true
 }
 
