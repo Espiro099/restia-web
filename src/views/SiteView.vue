@@ -1,5 +1,9 @@
 <script setup>
-import { onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import AssistantChat from '../components/AssistantChat.vue'
+import SiteLocations from '../components/site/SiteLocations.vue'
+import SiteReservation from '../components/site/SiteReservation.vue'
+import { MAX_CHARS, byDistance, siteApi, siteAssistantErrorText } from '../lib/site.js'
 import '@fontsource/lora/latin-700.css'
 import '@fontsource/manrope/latin-400.css'
 import '@fontsource/manrope/latin-700.css'
@@ -10,11 +14,84 @@ import room from '../assets/sitio/salon.webp'
 
 // Sitio público de La Mesa (Figma "Restia web", página 01 · Clientes, V2). Lo ve cualquier persona sin
 // sesión; el personal entra al panel desde el pie de página. La carta con precios se consulta con el QR de
-// cada mesa (/m#token), porque depende de la sucursal.
+// cada mesa (/m#token), porque depende de la sucursal. Sucursales en el mapa, solicitudes de reserva y
+// asistente: Decisiones_Public_Site en restia-api.
+const props = defineProps({
+  api: { type: Object, default: null },
+  /** navigator.geolocation; inyectable para las pruebas. */
+  geolocation: { type: Object, default: () => globalThis.navigator?.geolocation ?? null },
+})
+const calls = props.api ?? siteApi()
+
+const branchList = ref([])
+const loadFailed = ref(false)
+const assistant = ref(false)
+const user = ref(null)
+const locating = ref('idle')
+const selected = ref('')
+const reserveCode = ref('')
+const proposal = ref(null)
+
+const branches = computed(() => byDistance(branchList.value, user.value))
+
+async function loadBranches() {
+  loadFailed.value = false
+  try {
+    const r = await calls.branches()
+    branchList.value = r.branches
+    assistant.value = r.assistant
+  } catch {
+    loadFailed.value = true
+  }
+}
+
+/** La ubicación solo se usa aquí para ordenar las sucursales; no se manda a la API. */
+function locate() {
+  if (!props.geolocation) {
+    locating.value = 'unavailable'
+    return
+  }
+  locating.value = 'asking'
+  props.geolocation.getCurrentPosition((pos) => {
+    user.value = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+    locating.value = 'idle'
+    const nearest = branches.value.find((b) => b.distanceKm != null)
+    if (nearest) selected.value = nearest.code
+  }, (err) => {
+    locating.value = err?.code === 1 ? 'denied' : 'unavailable'
+  }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 })
+}
+
+function goReserve() {
+  document.getElementById('reservar')?.scrollIntoView?.({ block: 'start' })
+}
+
+function reserveAt(code) {
+  selected.value = code
+  reserveCode.value = code
+  goReserve()
+}
+
+function onDraft(draft) {
+  proposal.value = { draft, n: (proposal.value?.n ?? 0) + 1 }
+  if (draft.branchCode) selected.value = draft.branchCode
+  goReserve()
+}
+
+const SUGGESTIONS = ['¿Cuál es la sucursal más cercana?', '¿Qué me recomiendas?', 'Quiero reservar una mesa']
+
 let previousTitle = ''
-onMounted(() => {
+onMounted(async () => {
   previousTitle = document.title
   document.title = 'La Mesa · Restaurante'
+  await loadBranches()
+  // Si la persona ya dio permiso antes, se ubica sola; si no, espera a que toque el botón.
+  try {
+    const status = await globalThis.navigator?.permissions?.query({ name: 'geolocation' })
+    if (status?.state === 'granted') locate()
+  } catch {
+    // Sin Permissions API: espera al botón.
+  }
 })
 onBeforeUnmount(() => { document.title = previousTitle })
 </script>
@@ -27,10 +104,10 @@ onBeforeUnmount(() => { document.title = previousTitle })
         <a href="#inicio" class="logo"><img :src="logo" alt="La Mesa" width="102" height="56" /></a>
         <nav aria-label="Secciones">
           <a href="#menu">Menú</a>
-          <a href="#nosotros">Nosotros</a>
-          <a href="#visita">Visítanos</a>
+          <a href="#sucursales">Sucursales</a>
+          <a href="#reservar">Reservar</a>
         </nav>
-        <a href="#visita" class="cta site-cta-top">Planea tu visita <span aria-hidden="true">→</span></a>
+        <a href="#reservar" class="cta site-cta-top">Reservar mesa <span aria-hidden="true">→</span></a>
       </div>
     </header>
 
@@ -48,8 +125,8 @@ onBeforeUnmount(() => { document.title = previousTitle })
 
       <nav class="wrap shortcuts" aria-label="Atajos">
         <a href="#menu">Menú <span aria-hidden="true">→</span></a>
-        <a href="#nosotros">Nosotros <span aria-hidden="true">→</span></a>
-        <a href="#visita">Visítanos <span aria-hidden="true">→</span></a>
+        <a href="#sucursales">Sucursales <span aria-hidden="true">→</span></a>
+        <a href="#reservar">Reservar <span aria-hidden="true">→</span></a>
       </nav>
 
       <section id="menu" class="wrap split menu" aria-labelledby="menu-title">
@@ -70,18 +147,32 @@ onBeforeUnmount(() => { document.title = previousTitle })
             <p class="eyebrow">Nuestra esencia</p>
             <h2 id="about-title">Una mesa para<br />quedarse.</h2>
             <p class="body">La comida se disfruta a otro ritmo cuando hay buena compañía. En La Mesa, la mesa está puesta para una sobremesa larga o una cena que tenías ganas de celebrar.</p>
-            <a href="#visita" class="link">Planea tu visita <span aria-hidden="true">→</span></a>
+            <a href="#sucursales" class="link">Encuentra tu sucursal <span aria-hidden="true">→</span></a>
           </div>
         </div>
       </section>
 
-      <section id="visita" class="wrap visit" aria-labelledby="visit-title">
-        <p class="eyebrow">Tu próxima visita</p>
-        <h2 id="visit-title">Nos vemos en La Mesa.</h2>
-        <p class="body">Consulta los horarios y la disponibilidad con la sucursal antes de tu visita.</p>
-        <a href="#menu" class="cta">Volver al menú <span aria-hidden="true">↑</span></a>
+      <section id="sucursales" class="wrap branches" aria-labelledby="branches-title">
+        <p class="eyebrow">Sucursales</p>
+        <h2 id="branches-title">Hay una La Mesa cerca de ti.</h2>
+        <p v-if="loadFailed" class="body">No pudimos cargar las sucursales. <button type="button" class="retry" @click="loadBranches">Intentar de nuevo</button></p>
+        <SiteLocations v-else :branches="branches" :selected="selected" :user="user" :locating="locating"
+          @select="selected = $event" @locate="locate" @reserve="reserveAt" />
+      </section>
+
+      <section id="reservar" class="band visit-band" aria-labelledby="visit-title">
+        <div class="wrap visit">
+          <p class="eyebrow">Tu próxima visita</p>
+          <h2 id="visit-title">Nos vemos en La Mesa.</h2>
+          <p class="body">Pide tu mesa: elige sucursal, día y una hora con lugar. La sucursal te confirma por teléfono.</p>
+          <SiteReservation :api="calls" :branches="branches" :branch-code="reserveCode" :proposal="proposal" />
+        </div>
       </section>
     </main>
+
+    <AssistantChat v-if="assistant" class="site-chat" :ask="calls.ask" restaurant="La Mesa"
+      hint="Pregunta por la carta, las sucursales o los horarios. También te ayudo a pedir una reserva."
+      :suggestions="SUGGESTIONS" fab-label="¿Te ayudo?" :error-text="siteAssistantErrorText" :max-chars="MAX_CHARS" @draft="onDraft" />
 
     <footer class="foot">
       <div class="wrap foot-row">
@@ -102,6 +193,14 @@ onBeforeUnmount(() => { document.title = previousTitle })
   --gray: #5d6466;
   --gold: #f8b651;
   --paper: #fffaf4;
+  /* Colores del chat (AssistantChat) con la marca del sitio. */
+  --accent: var(--clay);
+  --surface: var(--paper);
+  --line: #e7d7c4;
+  --muted: var(--gray);
+  --bg: var(--sand);
+  --text: var(--ink);
+  --danger: #a3260b;
   min-height: 100vh;
   background: var(--cream);
   color: var(--ink);
@@ -158,8 +257,11 @@ h2 { font-size: clamp(2.3rem, 4.3vw, 4rem); line-height: 1.15; }
 .link { display: inline-block; margin-top: 12px; font-size: 14px; font-weight: 700; color: var(--clay); text-decoration: none; }
 .link:hover { text-decoration: underline; }
 
-.visit { padding-top: 110px; padding-bottom: 72px; text-align: center; display: flex; flex-direction: column; align-items: center; }
-.visit .body { margin-bottom: 36px; }
+.branches { padding-top: 96px; padding-bottom: 96px; }
+.retry { font: inherit; font-weight: 700; color: var(--clay); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+.visit-band { padding: 0; }
+.visit { padding-top: 96px; padding-bottom: 96px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.site-chat { font-family: 'Manrope', system-ui, sans-serif; }
 .visit h2 { font-size: clamp(2.5rem, 4.6vw, 4.1rem); }
 
 .foot { background: var(--ink); color: var(--paper); padding: 0; border: 0; font-size: inherit; }
@@ -189,7 +291,10 @@ h2 { font-size: clamp(2.3rem, 4.3vw, 4rem); line-height: 1.15; }
   /* En móvil la foto del salón va después del texto, como en el diseño. */
   .about .photo { order: 2; }
   .body { font-size: 15px; }
-  .visit { padding-top: 62px; padding-bottom: 24px; }
+  .branches { padding-top: 56px; padding-bottom: 56px; }
+  .visit { padding-top: 56px; padding-bottom: 56px; }
+  /* Espacio para el botón flotante del asistente, que si no tapa el acceso del personal. */
+  .foot { padding-bottom: 64px; }
   .foot-row { min-height: 88px; }
   .foot img { height: 39px; }
   .staff { font-size: 12px; }

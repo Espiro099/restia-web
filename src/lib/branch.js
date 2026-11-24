@@ -62,7 +62,28 @@ export function generalForm(branch) {
     name: branch.name ?? '',
     phone: branch.phone ?? '',
     address: Object.fromEntries(ADDRESS_FIELDS.map((k) => [k, a[k] ?? emptyAddress()[k]])),
+    location: locationText(branch.location),
   }
+}
+
+/** "20.673612, -103.344012" para el campo de texto; '' si la sucursal no tiene punto. */
+export function locationText(location) {
+  return location ? `${location.lat}, ${location.lng}` : ''
+}
+
+/**
+ * Lee el punto como lo copia Google Maps ("20.6736, -103.3440"): latitud y longitud en grados decimales,
+ * separadas por coma o espacio. '' → null (sin punto); undefined si no se entiende.
+ */
+export function parseLocation(text) {
+  const t = String(text ?? '').trim()
+  if (!t) return null
+  const m = /^(-?\d{1,2}(?:\.\d+)?)\s*[,\s]\s*(-?\d{1,3}(?:\.\d+)?)$/.exec(t)
+  if (!m) return undefined
+  const lat = Number(m[1])
+  const lng = Number(m[2])
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return undefined
+  return { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 }
 }
 
 export function generalProblem(form) {
@@ -71,6 +92,7 @@ export function generalProblem(form) {
   const filled = ['line1', 'city', 'state', 'postalCode'].filter((k) => a[k].trim())
   if (filled.length && filled.length < 4) return 'La dirección necesita calle, ciudad, estado y código postal.'
   if (filled.length && !/^[A-Z]{2}$/.test(a.country.trim().toUpperCase())) return 'El país va con dos letras, por ejemplo MX.'
+  if (parseLocation(form.location) === undefined) return 'El punto en el mapa va como 20.6736, -103.3440 (latitud, longitud).'
   return ''
 }
 
@@ -89,6 +111,8 @@ export function generalChanges(branch, form) {
     const before = branch.address ?? {}
     if (ADDRESS_FIELDS.some((k) => (address[k] ?? null) !== (before[k] ?? null))) out.address = address
   }
+  const location = parseLocation(form.location)
+  if (location !== undefined && JSON.stringify(location) !== JSON.stringify(branch.location ?? null)) out.location = location
   return out
 }
 

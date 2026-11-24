@@ -17,7 +17,7 @@ services:
     headers:
       - path: /*
         name: Content-Security-Policy
-        value: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        value: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
       - path: /*
         name: X-Frame-Options
         value: DENY
@@ -29,7 +29,7 @@ services:
         value: strict-origin-when-cross-origin
       - path: /*
         name: Permissions-Policy
-        value: camera=(), microphone=(), geolocation=(), payment=()
+        value: camera=(), microphone=(), geolocation=(self), payment=()
     routes:
       # Primero lo que va a la API; al final, cualquier ruta del panel (/panel/..., /m) sirve index.html.
       - type: rewrite

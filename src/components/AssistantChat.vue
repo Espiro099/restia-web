@@ -1,16 +1,23 @@
 <script setup>
 import { nextTick, ref } from 'vue'
-import { assistantErrorText, MAX_CHARS } from '../lib/publicMenu.js'
+import { assistantErrorText, MAX_CHARS as QR_MAX_CHARS } from '../lib/publicMenu.js'
 
-// Asistente del menú QR (QR-14 en restia-api): un botón flotante abre el chat. La conversación vive solo en
-// esta página (no se guarda en ningún lado) y se manda completa con cada pregunta.
+// Asistente con Claude (QR-14 y SITE-3 en restia-api): un botón flotante abre el chat. La conversación vive
+// solo en esta página (no se guarda en ningún lado) y se manda completa con cada pregunta.
 const props = defineProps({
-  /** (messages) => Promise<string>: pregunta con la conversación y devuelve la respuesta. */
+  /**
+   * (messages) => Promise<string | { reply, reservationDraft }>. Si trae una propuesta de reserva (sitio),
+   * se emite `draft` para que la página la muestre en su formulario.
+   */
   ask: { type: Function, required: true },
   restaurant: { type: String, default: 'La Mesa' },
+  hint: { type: String, default: 'Pregunta por platillos, precios o la sucursal. Para pedir, llama a tu mesero.' },
+  suggestions: { type: Array, default: () => ['¿Qué me recomiendas?', '¿Qué hay sin alcohol?', '¿Qué postres tienen?'] },
+  fabLabel: { type: String, default: '¿Dudas del menú?' },
+  errorText: { type: Function, default: assistantErrorText },
+  maxChars: { type: Number, default: QR_MAX_CHARS },
 })
-
-const SUGGESTIONS = ['¿Qué me recomiendas?', '¿Qué hay sin alcohol?', '¿Qué postres tienen?']
+const emit = defineEmits(['draft'])
 
 const open = ref(false)
 const messages = ref([])
@@ -34,20 +41,26 @@ async function toggle() {
 }
 
 async function send(text = draft.value) {
-  const question = text.trim().slice(0, MAX_CHARS)
+  const question = text.trim().slice(0, props.maxChars)
   if (!question || sending.value) return
   draft.value = ''
   messages.value.push({ role: 'user', content: question })
   sending.value = true
   scrollDown()
   try {
-    const reply = await props.ask(messages.value)
+    const answer = await props.ask(messages.value)
+    const reply = typeof answer === 'string' ? answer : answer.reply
     messages.value.push({ role: 'assistant', content: reply })
+    if (answer?.reservationDraft) {
+      emit('draft', answer.reservationDraft)
+      // En el teléfono el chat taparía el formulario que se acaba de llenar.
+      if (globalThis.matchMedia?.('(max-width: 760px)').matches) open.value = false
+    }
   } catch (e) {
     // El error se muestra en el chat pero no se manda en la siguiente pregunta; la pregunta sí se quita,
     // para que la conversación siga alternando cliente y asistente.
     messages.value.pop()
-    messages.value.push({ role: 'assistant', content: assistantErrorText(e), error: true })
+    messages.value.push({ role: 'assistant', content: props.errorText(e), error: true })
     draft.value = question
   } finally {
     sending.value = false
@@ -63,11 +76,11 @@ function onKey(event) {
 <template>
   <!-- "chat" y no "assistant": esa clase la llevan las burbujas del asistente. -->
   <div class="chat" @keydown="onKey">
-    <section v-if="open" id="assistant-panel" class="panel" role="dialog" aria-label="Asistente del menú">
+    <section v-if="open" id="assistant-panel" class="panel" role="dialog" :aria-label="`Asistente de ${restaurant}`">
       <header class="head">
         <div>
           <p class="title">Asistente de {{ restaurant }}</p>
-          <p class="hint">Pregunta por platillos, precios o la sucursal. Para pedir, llama a tu mesero.</p>
+          <p class="hint">{{ hint }}</p>
         </div>
         <button type="button" class="close" aria-label="Cerrar el asistente" @click="open = false">×</button>
       </header>
@@ -79,17 +92,17 @@ function onKey(event) {
         <p v-if="sending" class="msg assistant typing">Escribiendo…</p>
       </div>
       <div v-if="!messages.length" class="chips">
-        <button v-for="s in SUGGESTIONS" :key="s" type="button" @click="send(s)">{{ s }}</button>
+        <button v-for="s in suggestions" :key="s" type="button" @click="send(s)">{{ s }}</button>
       </div>
       <form class="compose" @submit.prevent="send()">
         <label class="sr-only" for="assistant-input">Tu pregunta</label>
-        <input id="assistant-input" ref="input" v-model="draft" type="text" :maxlength="MAX_CHARS" placeholder="Escribe tu pregunta…" autocomplete="off" />
+        <input id="assistant-input" ref="input" v-model="draft" type="text" :maxlength="maxChars" placeholder="Escribe tu pregunta…" autocomplete="off" />
         <button type="submit" :disabled="sending || !draft.trim()">Enviar</button>
       </form>
       <p class="note">Respuestas generadas con IA; pueden equivocarse. No se guarda la conversación.</p>
     </section>
     <button type="button" class="fab" :aria-expanded="open" aria-controls="assistant-panel" @click="toggle">
-      {{ open ? 'Cerrar' : '¿Dudas del menú?' }}
+      {{ open ? 'Cerrar' : fabLabel }}
     </button>
   </div>
 </template>
