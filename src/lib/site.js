@@ -32,7 +32,7 @@ export function siteApi({ fetch: doFetch = globalThis.fetch.bind(globalThis) } =
     /** { branches, assistant } */
     branches: async () => {
       const r = await request('GET', '/branches')
-      return { branches: r.data, assistant: !!r.meta?.assistant }
+      return { branches: r.data, assistant: !!r.meta?.assistant, reservationEmail: r.meta?.reservationEmail === true }
     },
     slots: async (code, date, partySize) => (await request('GET', `/branches/${encodeURIComponent(code)}/availability?date=${date}&partySize=${partySize}`)).data.slots,
     /** La misma `key` en un reintento no crea otra solicitud. */
@@ -142,7 +142,7 @@ export function requestErrorText(error) {
   if (error?.code === 'RESERVATION_ACTIVE_LIMIT_EXCEEDED') return 'Ese teléfono ya tiene dos reservas activas en esta sucursal. Llama si necesitas otra.'
   if (error?.status === 429) return 'Hiciste varios intentos seguidos. Espera un minuto y vuelve a intentar.'
   if (error?.status === 404) return 'No encontramos una solicitud con ese folio y teléfono.'
-  if (error?.status === 422) return error.fieldMessage?.('phone') ?? error.fieldMessage?.('date') ?? 'Revisa los datos de la solicitud.'
+  if (error?.status === 422) return error.fieldMessage?.('phone') ?? error.fieldMessage?.('email') ?? error.fieldMessage?.('date') ?? 'Revisa los datos de la solicitud.'
   return 'No pudimos enviar tu solicitud. Intenta de nuevo en un momento.'
 }
 

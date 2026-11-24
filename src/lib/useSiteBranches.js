@@ -5,6 +5,7 @@ export function useSiteBranches(api, geolocation) {
   const list = ref([])
   const state = ref('loading')
   const assistant = ref(false)
+  const reservationEmail = ref(false)
   const user = ref(null)
   const locating = ref('idle')
   const selected = ref('')
@@ -16,6 +17,7 @@ export function useSiteBranches(api, geolocation) {
       const result = await api.branches()
       list.value = result.branches
       assistant.value = result.assistant
+      reservationEmail.value = result.reservationEmail === true
       state.value = 'ready'
     } catch {
       state.value = 'error'
@@ -41,5 +43,5 @@ export function useSiteBranches(api, geolocation) {
 
   onMounted(loadBranches)
 
-  return { branches, state, assistant, user, locating, selected, locate, loadBranches }
+  return { branches, state, assistant, reservationEmail, user, locating, selected, locate, loadBranches }
 }

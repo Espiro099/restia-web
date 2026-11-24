@@ -25,7 +25,7 @@ describe('sitio de La Mesa', () => {
     expect(document.title).toBe('La Mesa · Restaurante')
     expect(wrapper.find('h1').text()).toContain('El sabor de compartir')
     expect(wrapper.findAll('img[alt="La Mesa · Inicio"]')).toHaveLength(2)
-    expect(wrapper.text()).toContain('Nos vemos en La Mesa.')
+    expect(wrapper.text()).toContain('Reserva una mesa.')
     expect(wrapper.text()).not.toContain('Restia')
     for (const id of ['menu', 'instalaciones', 'nosotros', 'sucursales', 'reservar', 'contacto']) expect(wrapper.find(`#${id}`).exists()).toBe(true)
     expect(wrapper.find('#novedades').exists()).toBe(false)

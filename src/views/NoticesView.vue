@@ -1,8 +1,8 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSession } from '../stores/session.js'
-import { noticeAge, noticeTarget, notificationsApi } from '../lib/notifications.js'
+import { noticeAge, noticeDestination, notificationsApi, POLL_MS } from '../lib/notifications.js'
 import { errorText } from '../lib/errors.js'
 
 // Centro de avisos (Figma "Restia web", 02 · Panel → Avisos): los avisos del usuario en la sucursal, con
@@ -19,22 +19,26 @@ const page = ref(1)
 const lastPage = ref(1)
 const loading = ref(true)
 const error = ref('')
+let timer
+let request = 0
 
 async function load(next = 1) {
   const b = session.branchId
   if (!b) return
+  const current = ++request
   loading.value = true
   error.value = ''
   try {
     const r = await calls.page(b, { unread: onlyUnread.value, page: next })
+    if (current !== request || b !== session.branchId) return
     items.value = next === 1 ? r.items : [...items.value, ...r.items]
     unread.value = r.unread
     page.value = next
     lastPage.value = r.lastPage
   } catch (e) {
-    error.value = errorText(e)
+    if (current === request) error.value = errorText(e)
   } finally {
-    loading.value = false
+    if (current === request) loading.value = false
   }
 }
 
@@ -44,8 +48,8 @@ async function open(n) {
     unread.value = Math.max(0, unread.value - 1)
     calls.read(session.branchId, n.id).catch(() => load())
   }
-  const target = noticeTarget(n, (p) => session.canOpen(p))
-  if (target) router.push({ name: target })
+  const target = noticeDestination(n, (p) => session.canHere(p))
+  if (target) router.push(target)
 }
 
 async function readAll() {
@@ -57,8 +61,27 @@ async function readAll() {
   }
 }
 
-onMounted(() => load())
-watch([onlyUnread, () => session.branchId], () => load())
+function refreshVisible() {
+  if (document.visibilityState === 'visible' && !loading.value && page.value === 1) load()
+}
+
+onMounted(() => {
+  load()
+  timer = setInterval(refreshVisible, POLL_MS)
+  document.addEventListener('visibilitychange', refreshVisible)
+})
+onBeforeUnmount(() => {
+  request++
+  clearInterval(timer)
+  document.removeEventListener('visibilitychange', refreshVisible)
+})
+watch([onlyUnread, () => session.branchId], () => {
+  items.value = []
+  unread.value = 0
+  page.value = 1
+  lastPage.value = 1
+  load()
+})
 </script>
 
 <template>
@@ -68,7 +91,10 @@ watch([onlyUnread, () => session.branchId], () => load())
         <h1>Avisos</h1>
         <h2 class="center">Centro de avisos</h2>
       </div>
-      <button type="button" class="btn btn-primary" :disabled="!unread" @click="readAll">Marcar como leídos</button>
+      <div class="actions">
+        <button type="button" class="btn" :disabled="loading" @click="load()">Actualizar avisos</button>
+        <button type="button" class="btn btn-primary" :disabled="!unread" @click="readAll">Marcar como leídos</button>
+      </div>
     </div>
     <label class="filter"><input v-model="onlyUnread" type="checkbox" /> Ver solo avisos sin leer <span class="count">({{ unread }})</span></label>
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
@@ -93,6 +119,7 @@ watch([onlyUnread, () => session.branchId], () => load())
 </template>
 
 <style scoped>
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .center { margin: 4px 0 0; font-size: 1.25rem; font-weight: 700; }
 .filter { display: inline-flex; align-items: center; gap: 8px; margin: 14px 0; font-size: .88rem; font-weight: 600; }
 .count { color: var(--muted); font-weight: 400; }
