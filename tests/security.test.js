@@ -63,8 +63,9 @@ describe('Cabeceras de seguridad del panel', () => {
     expect(SECURITY_HEADERS['X-Content-Type-Options']).toBe('nosniff')
   })
 
-  it('render.yaml publica las mismas cabeceras que security-headers.js', () => {
-    const yaml = readFileSync('render.yaml', 'utf8')
+  // Staging (render.yaml) y la plantilla de producción publican las mismas cabeceras que security-headers.js.
+  it.each(['render.yaml', 'deploy/render/produccion.yaml'])('%s publica las mismas cabeceras que security-headers.js', (file) => {
+    const yaml = readFileSync(file, 'utf8')
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
       const block = new RegExp(`name: ${name}\\s+value: "?([^"\\n]+)"?`).exec(yaml)
       expect(block, name).not.toBeNull()
