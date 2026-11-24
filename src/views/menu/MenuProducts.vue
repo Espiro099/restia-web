@@ -195,6 +195,15 @@ async function submit() {
   }
 }
 
+// M-13: la recomendación del día que destaca el menú del QR.
+async function toggleRecommended(p) {
+  notice.value = ''
+  const next = !p.recommended
+  await run(() => calls.updateProduct(branchId(), p, { recommended: next }),
+    next ? `${p.name} es recomendación del día.` : `${p.name} ya no es recomendación del día.`)
+  if (error.value) notice.value = ''
+}
+
 async function toggleAvailability(p) {
   notice.value = ''
   const next = p.availability === 'SOLD_OUT' ? 'AVAILABLE' : 'SOLD_OUT'
@@ -242,12 +251,16 @@ async function toggleAvailability(p) {
             <td>
               <span class="pill" :class="{ muted: p.status !== 'ACTIVE' }">{{ p.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}</span>
               <span v-if="p.availability === 'SOLD_OUT'" class="pill warn">Agotado</span>
+              <span v-if="p.recommended" class="pill accent">Recomendado hoy</span>
             </td>
             <td class="actions">
               <template v-if="canManage">
                 <button type="button" class="btn" @click="open('edit', p)">Editar</button>
                 <button type="button" class="btn" @click="open('photo', p)">Foto</button>
                 <button type="button" class="btn" @click="open('routes', p)">Estaciones</button>
+                <button type="button" class="btn" :disabled="busy" :aria-pressed="!!p.recommended" @click="toggleRecommended(p)">
+                  {{ p.recommended ? 'Quitar recomendación' : 'Recomendar hoy' }}
+                </button>
                 <button v-if="p.status === 'ACTIVE'" type="button" class="btn btn-danger" @click="open('off', p)">Desactivar</button>
                 <button v-else type="button" class="btn" @click="open('on', p)">Activar</button>
               </template>

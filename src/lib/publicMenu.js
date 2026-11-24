@@ -51,6 +51,11 @@ export function menuSections(menu) {
   return [...sections].map(([category, items]) => ({ category, items, anchor: anchorFor(category) }))
 }
 
+/** Recomendaciones del día (M-13), con sus modificadores resueltos, en el orden de la carta. */
+export function recommendedOf(menu) {
+  return menuSections(menu).flatMap((s) => s.items).filter((p) => p.recommended)
+}
+
 /** Id de ancla estable para saltar a una categoría. */
 export function anchorFor(category) {
   return 'cat-' + String(category).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')

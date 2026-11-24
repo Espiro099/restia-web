@@ -67,20 +67,52 @@ describe('página del menú público', () => {
     window.location.hash = ''
   })
 
-  it('muestra restaurante, mesa, precios, agotados y opciones, y avisa presencia', async () => {
+  it('muestra restaurante, mesa, precios y agotados, y avisa presencia', async () => {
     window.location.hash = `#${TOKEN}`
     const calls = fakeCalls()
     const wrapper = mount(PublicMenuView, { props: { api: calls } })
     await flushPromises()
 
-    expect(wrapper.find('h1').text()).toBe('Restia Centro')
-    expect(wrapper.text()).toContain('Mesa 3')
+    expect(wrapper.find('h1').text()).toBe('Nuestro menú')
+    expect(wrapper.find('.eyebrow').text()).toBe('Restia Centro')
+    expect(wrapper.find('.table').text()).toBe('Mesa 3')
     expect(wrapper.text()).toContain('$95.00')
     expect(wrapper.find('.dish.out').text()).toContain('Agotado por hoy')
-    expect(wrapper.text()).toContain('Tamaño (elige 1):')
-    expect(wrapper.text()).toContain('Grande +$15.00')
+    expect(wrapper.findAll('.cat').map((c) => c.find('.cat-name').text())).toEqual(['Bebidas', 'Platos fuertes'])
+    // Sin recomendación del día no aparece esa sección, ni el chat ni la ubicación (solo menú).
+    expect(wrapper.find('.picks').exists()).toBe(false)
+    expect(wrapper.find('.chat').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Cómo llegar')
     expect(calls.presence).toHaveBeenCalledWith(TOKEN)
     expect(document.title).toBe('Restia Centro · Menú')
+  })
+
+  it('destaca la recomendación del día y al tocar un platillo abre su foto, descripción y opciones', async () => {
+    window.location.hash = `#${TOKEN}`
+    const img = 'https://restia-api-staging.onrender.com/api/v1/public/images/0b9a7c1e-2f43-4c1a-9d2b-7e5f3a1c8d90'
+    const menu = { ...MENU, products: MENU.products.map((p) => (p.id === 'p1' ? { ...p, recommended: true, description: 'Con piña y cilantro', imageUrl: img } : p)) }
+    const wrapper = mount(PublicMenuView, { props: { api: fakeCalls({ menu: vi.fn(async () => ({ data: menu })) }) }, attachTo: document.body })
+    await flushPromises()
+
+    const pick = wrapper.find('.pick')
+    expect(pick.text()).toContain('Tacos al pastor')
+    expect(pick.text()).toContain('Con piña y cilantro')
+    expect(pick.find('img').attributes('src')).toBe('/api/v1/public/images/0b9a7c1e-2f43-4c1a-9d2b-7e5f3a1c8d90')
+
+    await wrapper.findAll('.dish').find((d) => d.text().includes('Tacos al pastor')).trigger('click')
+    const sheet = wrapper.find('[role="dialog"]')
+    expect(sheet.find('h2').text()).toBe('Tacos al pastor')
+    expect(sheet.find('.sheet-photo').attributes('alt')).toBe('Tacos al pastor')
+    expect(sheet.text()).toContain('Recomendación del día')
+    expect(sheet.text()).toContain('Con piña y cilantro')
+    expect(sheet.text()).toContain('Tamaño (elige 1)')
+    expect(sheet.text()).toContain('Grande +$15.00')
+    expect(document.activeElement).toBe(sheet.find('.close').element)
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   it('sin token válido no llama a la API', async () => {
