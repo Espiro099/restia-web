@@ -1,8 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import BranchMap from '../BranchMap.vue'
-import { distanceText, hoursText } from '../../lib/site.js'
-import { telHref } from '../../lib/publicMenu.js'
+import { distanceText, hoursText, telHref } from '../../lib/site.js'
 
 // Sucursales de La Mesa (SITE-1): minimapa y lista. Con la ubicación de la persona, la más cercana va
 // primero y queda marcada; la ubicación no sale del navegador.

@@ -161,3 +161,9 @@ export function newKey() {
     return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
   })
 }
+
+/** Enlace de llamada a partir del teléfono de la sucursal (solo dígitos y +). */
+export function telHref(phone) {
+  const digits = String(phone ?? '').replace(/[^\d+]/g, '')
+  return digits.length >= 7 ? `tel:${digits}` : ''
+}
