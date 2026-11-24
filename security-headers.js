@@ -3,11 +3,13 @@
 export const SECURITY_HEADERS = {
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self'",
-    "style-src 'self'",
+    // Botón de Google Identity Services (inicio de sesión con Google): su script, estilo, marco y conexiones.
+    "script-src 'self' https://accounts.google.com/gsi/client",
+    "style-src 'self' https://accounts.google.com/gsi/style",
     "img-src 'self' data: blob: https://tile.openstreetmap.org",
     "font-src 'self'",
-    "connect-src 'self'",
+    "connect-src 'self' https://accounts.google.com/gsi/",
+    "frame-src https://accounts.google.com/gsi/",
     "object-src 'none'",
     "frame-ancestors 'none'",
     "base-uri 'self'",

@@ -3,7 +3,10 @@ import { api as defaultApi } from '../lib/client.js'
 import { PANEL_ROLES } from '../modules.js'
 
 /** Mensaje para la persona según el error; el código exacto queda para soporte. */
-export function loginErrorText(error) {
+export function loginErrorText(error, { google = false } = {}) {
+  // Con Google no hay contraseña: lo que falla es que esa cuenta no sea del personal.
+  if (google && error?.code === 'AUTHENTICATION_INVALID') return 'Esa cuenta de Google no está dada de alta en Restia. Usa el correo con el que te registraron o tu contraseña.'
+  if (google && error?.status === 404) return 'El inicio de sesión con Google no está disponible.'
   if (error?.code === 'NETWORK') return 'No hay conexión con el servidor.'
   if (error?.code === 'AUTHENTICATION_INVALID') return 'Correo o contraseña incorrectos.'
   if (error?.status === 429) return 'Demasiados intentos. Espera un momento.'
@@ -82,15 +85,24 @@ export const useSession = defineStore('session', {
     },
 
     async login(email, password, api = defaultApi) {
+      return this.start(() => api.post('/auth/login', { email: email.trim(), password }), {})
+    },
+
+    /** Con el ID token que entrega el botón de Google (Decisiones_Google_Login). */
+    async loginWithGoogle(credential, api = defaultApi) {
+      return this.start(() => api.post('/auth/google', { credential }), { google: true })
+    },
+
+    async start(request, how) {
       if (this.submitting) return false
       this.submitting = true
       this.error = null
       try {
-        const { data } = await api.post('/auth/login', { email: email.trim(), password })
+        const { data } = await request()
         this.adopt(data)
         return true
       } catch (e) {
-        this.error = loginErrorText(e)
+        this.error = loginErrorText(e, how)
         return false
       } finally {
         this.submitting = false
