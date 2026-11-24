@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSession } from '../stores/session.js'
 import { safeReturn } from '../lib/navigation.js'
+import GoogleSignInButton from '../components/GoogleSignInButton.vue'
 
 const session = useSession()
 const router = useRouter()
@@ -23,6 +24,10 @@ async function submit() {
     await router.push(safeReturn(route.query.volver))
   }
 }
+
+async function withGoogle(credential) {
+  if (await session.loginWithGoogle(credential)) await router.push(safeReturn(route.query.volver))
+}
 </script>
 
 <template>
@@ -39,6 +44,7 @@ async function submit() {
     </label>
     <p v-if="session.error" class="error" role="alert">{{ session.error }}</p>
     <button type="submit" :disabled="!canSubmit">{{ session.submitting ? 'Entrando…' : 'Entrar' }}</button>
+    <GoogleSignInButton @credential="withGoogle" />
     <p class="hint">Para administradores y gerentes. El personal de piso usa la app Android.</p>
   </form>
 </template>
