@@ -1,7 +1,8 @@
 <script setup>
-import { computed, inject, reactive, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import ErrorNotice from '../../components/ErrorNotice.vue'
 import { MOVEMENT_TYPES, qtyText } from '../../lib/inventory.js'
+import { useVisibleRefresh } from '../../lib/useVisibleRefresh.js'
 
 // Movimientos de inventario: solo lectura. Los consumos salen solos al preparar; el resto se registra en
 // Insumos, Entradas y Conteos.
@@ -36,6 +37,10 @@ watch(() => `${filters.ingredientId}|${filters.type}`, () => {
   load()
 }, { immediate: true })
 watch(page, load)
+useVisibleRefresh(() => {
+  if (!loading.value && page.value === 1) load()
+}, 10_000)
+onBeforeUnmount(() => { seq++ })
 
 function time(iso) {
   return new Date(iso).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
@@ -68,7 +73,7 @@ function time(iso) {
           <tr v-for="m in rows" :key="m.id">
             <td>{{ time(m.createdAt) }}</td>
             <td><span class="cell-main">{{ byId.get(m.ingredientId)?.name ?? 'Insumo' }}</span><span v-if="m.reason" class="cell-sub">{{ m.reason }}</span></td>
-            <td>{{ MOVEMENT_TYPES[m.type] ?? m.type }}<span v-if="m.recipeVersion" class="cell-sub">Receta v{{ m.recipeVersion }}</span></td>
+            <td>{{ MOVEMENT_TYPES[m.type] ?? m.type }}<span v-if="m.sourceProductName" class="cell-sub">{{ m.sourceProductName }}</span><span v-if="m.recipeVersion" class="cell-sub">Receta v{{ m.recipeVersion }}</span></td>
             <td class="num" :class="Number(m.quantity) < 0 ? 'out' : 'in'">{{ Number(m.quantity) > 0 ? '+' : '' }}{{ qtyText(m.quantity, byId.get(m.ingredientId)?.baseUnit) }}</td>
           </tr>
           <tr v-if="!loading && !rows.length"><td colspan="4" class="empty-row">No hay movimientos con estos filtros.</td></tr>

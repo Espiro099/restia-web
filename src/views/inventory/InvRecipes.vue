@@ -10,39 +10,59 @@ const { calls, branchId, perms, ingredients, byId } = inject('inventory')
 
 const products = ref([])
 const productId = ref('')
+const onlyMissing = ref(false)
+const missing = computed(() => products.value.filter((p) => p.status === 'ACTIVE' && !p.currentRecipeVersion))
+const visible = computed(() => onlyMissing.value ? missing.value : products.value)
+const product = computed(() => visible.value.find((p) => p.id === productId.value) ?? null)
 const recipes = ref([])
 const items = ref([])
 const loading = ref(false)
 const error = ref(null)
 
+let productsRequest = 0
 async function loadProducts() {
+  const request = ++productsRequest
   error.value = null
   try {
-    products.value = (await calls.products(branchId())).filter((p) => p.status === 'ACTIVE' || p.currentRecipeVersion)
-    if (!products.value.some((p) => p.id === productId.value)) productId.value = products.value[0]?.id ?? ''
+    const rows = await calls.products(branchId())
+    if (request === productsRequest) products.value = rows.filter((p) => p.status === 'ACTIVE' || p.currentRecipeVersion)
   } catch (e) {
-    error.value = e
+    if (request === productsRequest) error.value = e
   }
 }
-const product = computed(() => products.value.find((p) => p.id === productId.value) ?? null)
-
+let recipeRequest = 0
 async function loadRecipe() {
-  if (!product.value) return
-  loading.value = true
+  const selected = product.value
+  const request = ++recipeRequest
+  recipes.value = []
+  items.value = []
+  loading.value = !!selected
+  if (!selected) return
   try {
-    recipes.value = await calls.recipes(branchId(), product.value)
-    const current = recipes.value[0]
-    items.value = (current?.items ?? []).map((i) => ({ ingredientId: i.ingredientId, qty: String(Number(i.quantity)) }))
+    const rows = await calls.recipes(branchId(), selected)
+    if (request !== recipeRequest) return
+    recipes.value = rows
+    items.value = (rows[0]?.items ?? []).map((i) => ({ ingredientId: i.ingredientId, qty: String(Number(i.quantity)) }))
   } catch (e) {
-    error.value = e
+    if (request === recipeRequest) error.value = e
   } finally {
-    loading.value = false
+    if (request === recipeRequest) loading.value = false
   }
 }
-watch(() => branchId(), loadProducts, { immediate: true })
+watch(() => branchId(), () => {
+  products.value = []
+  loadProducts()
+}, { immediate: true })
+watch(visible, (list) => {
+  if (!list.some((p) => p.id === productId.value)) productId.value = list[0]?.id ?? ''
+})
 watch(productId, loadRecipe)
 
-const { busy, error: actionError, notice, run } = useAction(async () => { await loadProducts(); await loadRecipe() }, inventoryErrorText)
+const { busy, error: actionError, notice, run } = useAction(async () => {
+  const selected = productId.value
+  await loadProducts()
+  if (productId.value === selected) await loadRecipe()
+}, inventoryErrorText)
 
 const active = computed(() => ingredients.value.filter((i) => i.status === 'ACTIVE'))
 const problem = computed(() => {
@@ -70,17 +90,20 @@ async function publish() {
 <template>
   <div>
     <ErrorNotice :error="error" @retry="loadProducts" />
+    <p class="help">Cocina descuenta los insumos de la receta al iniciar cada platillo. Publica una receta por porción para que ese consumo se registre automáticamente.</p>
     <div class="toolbar">
-      <label class="grow">Producto
+      <label><input v-model="onlyMissing" type="checkbox" /> Sin receta publicada ({{ missing.length }})</label>
+      <label v-if="visible.length" class="grow">Producto
         <select v-model="productId" class="field">
-          <option v-for="p in products" :key="p.id" :value="p.id">{{ p.name }}{{ p.currentRecipeVersion ? ` · receta v${p.currentRecipeVersion}` : ' · sin receta' }}</option>
+          <option v-for="p in visible" :key="p.id" :value="p.id">{{ p.name }}{{ p.currentRecipeVersion ? ` · receta v${p.currentRecipeVersion}` : ' · sin receta' }}</option>
         </select>
       </label>
     </div>
+    <p v-if="onlyMissing && !missing.length && products.length" class="help">Todos los productos activos tienen receta publicada.</p>
     <p v-if="notice" class="notice-ok" role="status">{{ notice }}</p>
 
     <div v-if="product" class="box panel">
-      <p class="help">{{ recipes.length ? `Versión ${recipes[0].recipeVersion} vigente.` : 'Este producto no tiene receta: al prepararlo no se descuenta nada.' }} Las cantidades son por porción.</p>
+      <p class="help">{{ recipes.length ? `Versión ${recipes[0].recipeVersion} vigente.` : 'Este producto no tiene receta base publicada.' }} Las cantidades son por porción.</p>
       <p v-if="loading" class="help">Cargando la receta…</p>
       <template v-else>
         <div v-for="(it, i) in items" :key="i" class="line">
@@ -98,7 +121,7 @@ async function publish() {
           <p v-if="changed && problem" class="help" aria-live="polite">{{ problem }}</p>
           <p v-if="actionError" class="form-error" role="alert">{{ actionError }}</p>
           <div class="form-buttons">
-            <button type="button" class="btn btn-primary" :disabled="busy || !!problem || !changed" @click="publish">{{ busy ? 'Publicando…' : 'Publicar versión nueva' }}</button>
+            <button type="button" class="btn btn-primary" :disabled="busy || loading || !!problem || !changed" @click="publish">{{ busy ? 'Publicando…' : 'Publicar versión nueva' }}</button>
           </div>
         </template>
         <p v-if="recipes.length > 1" class="help">Versiones anteriores: {{ recipes.slice(1).map((r) => `v${r.recipeVersion} (${r.items.map((x) => `${byId.get(x.ingredientId)?.name ?? '?'} ${qtyText(x.quantity, byId.get(x.ingredientId)?.baseUnit)}`).join(', ')})`).join(' · ') }}</p>

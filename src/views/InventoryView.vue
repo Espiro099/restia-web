@@ -1,7 +1,8 @@
 <script setup>
-import { computed, provide, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useSession } from '../stores/session.js'
 import { inventoryApi } from '../lib/inventory.js'
+import { useVisibleRefresh } from '../lib/useVisibleRefresh.js'
 import ErrorNotice from '../components/ErrorNotice.vue'
 import InvIngredients from './inventory/InvIngredients.vue'
 import InvMovements from './inventory/InvMovements.vue'
@@ -30,19 +31,36 @@ const tab = ref('insumos')
 const ingredients = ref([])
 const loaded = ref(false)
 const error = ref(null)
+let loading = false
+let request = 0
 async function loadIngredients() {
-  error.value = null
+  const branch = session.branchId
+  if (!branch) return
+  const current = ++request
+  loading = true
   try {
-    ingredients.value = await calls.ingredients(session.branchId)
+    const rows = await calls.ingredients(branch)
+    if (current !== request) return
+    ingredients.value = rows
     loaded.value = true
+    error.value = null
   } catch (e) {
-    error.value = e
+    if (current === request) error.value = e
+  } finally {
+    if (current === request) loading = false
   }
 }
 watch(() => session.branchId, () => {
+  request++
   loaded.value = false
+  ingredients.value = []
+  error.value = null
   loadIngredients()
 }, { immediate: true })
+useVisibleRefresh(() => {
+  if (!loading && tab.value === 'insumos') loadIngredients()
+}, 10_000)
+onBeforeUnmount(() => { request++ })
 
 const byId = computed(() => new Map(ingredients.value.map((i) => [i.id, i])))
 provide('inventory', { calls, branchId: () => session.branchId, perms, ingredients, byId, reloadIngredients: loadIngredients })
@@ -64,7 +82,7 @@ provide('inventory', { calls, branchId: () => session.branchId, perms, ingredien
     <ErrorNotice :error="error" @retry="loadIngredients" />
     <p v-if="!loaded && !error" class="help" aria-live="polite">Cargando insumos…</p>
 
-    <div v-if="loaded && !error" id="panel-inventario" role="tabpanel" :aria-labelledby="`tab-${tab}`">
+    <div v-if="loaded" id="panel-inventario" role="tabpanel" :aria-labelledby="`tab-${tab}`">
       <InvIngredients v-if="tab === 'insumos'" />
       <InvMovements v-else-if="tab === 'movimientos'" />
       <InvReceipts v-else-if="tab === 'entradas'" />

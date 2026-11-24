@@ -119,8 +119,9 @@ export function phoneDigits(text) {
 export function requestProblem(form) {
   if (!form.branchCode) return 'Elige la sucursal.'
   if (!form.date) return 'Elige el día.'
-  if (!form.time) return 'Elige la hora.'
+  if (!form.partySize) return 'Elige el número de personas.'
   if (!(form.partySize >= 1 && form.partySize <= MAX_PARTY)) return `Para más de ${MAX_PARTY} personas, llama a la sucursal.`
+  if (!form.time) return 'Elige la hora.'
   if (form.name.trim().length < 2) return 'Escribe tu nombre.'
   if (phoneDigits(form.phone).length !== 10) return 'Escribe tu teléfono a 10 dígitos.'
   return ''
@@ -140,7 +141,7 @@ export function requestErrorText(error) {
   if (error?.code === 'NETWORK') return 'No hay conexión. Revisa tu internet e intenta de nuevo.'
   if (error?.code === 'RESERVATION_NOT_AVAILABLE') return 'Ese horario ya no está disponible. Elige otro.'
   if (error?.code === 'RESERVATION_ACTIVE_LIMIT_EXCEEDED') return 'Ese teléfono ya tiene dos reservas activas en esta sucursal. Llama si necesitas otra.'
-  if (error?.status === 429) return 'Hiciste varios intentos seguidos. Espera un minuto y vuelve a intentar.'
+  if (error?.status === 429) return 'Hiciste varios intentos seguidos. Vuelve a intentarlo más tarde.'
   if (error?.status === 404) return 'No encontramos una solicitud con ese folio y teléfono.'
   if (error?.status === 422) return error.fieldMessage?.('phone') ?? error.fieldMessage?.('email') ?? error.fieldMessage?.('date') ?? 'Revisa los datos de la solicitud.'
   return 'No pudimos enviar tu solicitud. Intenta de nuevo en un momento.'

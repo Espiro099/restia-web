@@ -79,6 +79,16 @@ describe('pantalla de Mesas', () => {
     expect(wrapper.text()).toContain('Mantenimiento')
   })
 
+  it('refleja el estado nuevo de una mesa al recuperar la conexión', async () => {
+    const { wrapper } = await mountAs(ALL)
+    rows = [table(1, { operationalState: 'LIBRE' })]
+    window.dispatchEvent(new Event('online'))
+    await flushPromises()
+    expect(wrapper.text()).toContain('Libre')
+    expect(wrapper.text()).not.toContain('Consumiendo')
+    wrapper.unmount()
+  })
+
   it('solo con lectura no ofrece cambios ni QR', async () => {
     const { wrapper } = await mountAs(['tables.read'])
     expect(button(wrapper, 'Nueva mesa')).toBeUndefined()
