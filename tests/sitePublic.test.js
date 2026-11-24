@@ -99,6 +99,13 @@ describe('sitio público: datos', () => {
   })
 })
 
+async function chooseDateAndParty(wrapper) {
+  const form = wrapper.find('form.rsv-card')
+  await form.find('input[type="date"]').setValue(localDate(1))
+  await form.findAll('select')[1].setValue('2')
+  await flushPromises()
+}
+
 describe('sitio público: página', () => {
   it('preselecciona la sucursal del enlace cuando llegan los horarios de sucursales', async () => {
     const api = fakeApi()
@@ -106,7 +113,9 @@ describe('sitio público: página', () => {
     await wrapper.setProps({ branches: [CENTRO, { ...ZAPOPAN, reservations: true }] })
     await flushPromises()
     expect(wrapper.find('form.rsv-card select').element.value).toBe(ZAPOPAN.code)
-    expect(api.slots).toHaveBeenCalledWith(ZAPOPAN.code, expect.any(String), 2)
+    expect(api.slots).not.toHaveBeenCalled()
+    await chooseDateAndParty(wrapper)
+    expect(api.slots).toHaveBeenCalledWith(ZAPOPAN.code, localDate(1), 2)
     wrapper.unmount()
   })
 
@@ -144,6 +153,7 @@ describe('sitio público: página', () => {
     const api = fakeApi()
     const wrapper = mount(SiteReservation, { props: { api, branches: [CENTRO], emailAvailable: true } })
     await flushPromises()
+    await chooseDateAndParty(wrapper)
     await wrapper.find('input[value="20:00"]').setValue(true)
     await wrapper.find('input[autocomplete="name"]').setValue('Ana')
     await wrapper.find('input[autocomplete="tel-national"]').setValue('3311112222')
@@ -152,7 +162,10 @@ describe('sitio público: página', () => {
     await flushPromises()
     expect(api.createRequest).toHaveBeenCalledWith(expect.objectContaining({ email: 'ana@example.com' }), expect.any(String))
     expect(wrapper.find('.rsv-done h3').text()).toBe('Solicitud recibida')
-    expect(wrapper.find('.rsv-done').text()).toContain('te enviaremos un correo')
+    expect(wrapper.find('.rsv-done').text()).toContain('este folio por correo')
+    expect(wrapper.find('.rsv-done').text()).not.toContain('Ana')
+    const form = wrapper.find('form.rsv-card')
+    expect(form.findAll('input,select').map((field) => field.element.value)).toEqual(['', '', '', '', '', '', ''])
     await wrapper.find('.rsv-actions .rsv-primary').trigger('click')
     await flushPromises()
     expect(api.lookup).toHaveBeenCalledWith({ branchCode: 'CENTRO', folio: 'ABCD2345', phone: '3311112222' })
@@ -192,6 +205,7 @@ describe('solicitud de reserva', () => {
     await flushPromises()
     // Solo Centro acepta solicitudes: queda elegida sola.
     expect(wrapper.findAll('select')[0].element.value).toBe('CENTRO')
+    await chooseDateAndParty(wrapper)
     expect(api.slots).toHaveBeenCalledWith('CENTRO', localDate(1), 2)
     expect(wrapper.findAll('.rsv-slot').map((s) => s.text())).toEqual(['13:00', '13:30', '20:00'])
     await wrapper.findAll('.rsv-slot input')[1].setValue(true)
@@ -206,6 +220,7 @@ describe('solicitud de reserva', () => {
     expect(second[1]).toBe(first[1])
     expect(second[0]).toMatchObject({ phone: '3398765432', time: '13:30' })
     expect(wrapper.find('.rsv-done').text()).toContain('ABCD2345')
+    wrapper.unmount()
   })
 
   it('consulta el estado con folio y teléfono', async () => {

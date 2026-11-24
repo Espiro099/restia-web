@@ -13,12 +13,16 @@ const props = defineProps({
   emailAvailable: { type: Boolean, default: false },
   /** Sucursal elegida en el mapa. */
   branchCode: { type: String, default: '' },
+  branchSelection: { type: Number, default: 0 },
   /** { draft, n }: propuesta del asistente; `n` cambia con cada propuesta nueva. */
   proposal: { type: Object, default: null },
 })
 
 const bookable = computed(() => props.branches.filter((b) => b.reservations))
-const form = reactive({ branchCode: '', date: localDate(1), partySize: 2, time: '', name: '', phone: '', notes: '', email: '' })
+function emptyRequest() {
+  return { branchCode: '', date: '', partySize: '', time: '', name: '', phone: '', notes: '', email: '' }
+}
+const form = reactive(emptyRequest())
 const slots = ref([])
 const slotsState = ref('idle') // idle | loading | ready | error
 const slotsError = ref('')
@@ -43,19 +47,19 @@ let pendingTime = ''
 const minDate = localDate(0)
 const maxDate = localDate(MAX_DAYS_AHEAD)
 const problem = computed(() => requestProblem(form) ||
-  (props.emailAvailable && form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
-    ? 'Revisa el correo para enviarte la confirmación.' : ''))
+  (props.emailAvailable && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
+    ? 'Escribe un correo válido para recibir el folio y la confirmación.' : ''))
 const sentMessage = computed(() => {
   if (!sent.value) return ''
   if (sent.value.status !== 'PENDING') return REQUEST_STATUS[sent.value.status] ?? sent.value.status
   return sentWithEmail.value
-    ? 'Cuando la sucursal confirme, te enviaremos un correo.'
+    ? 'Te enviaremos este folio por correo y te avisaremos cuando la sucursal confirme.'
     : 'La sucursal revisará tu solicitud. Puedes volver a consultar con tu folio y teléfono.'
 })
 const branchName = (code) => props.branches.find((b) => b.code === code)?.name ?? code
 
-watch([() => props.branchCode, bookable], ([code, list], [previousCode, previousList]) => {
-  const arrived = code !== previousCode || !previousList?.some((branch) => branch.code === code)
+watch([() => props.branchCode, bookable, () => props.branchSelection], ([code, list, selection], [previousCode, previousList, previousSelection]) => {
+  const arrived = selection !== previousSelection || code !== previousCode || !previousList?.some((branch) => branch.code === code)
   if (code && arrived && list.some((branch) => branch.code === code)) form.branchCode = code
   else if (!form.branchCode && list.length === 1) form.branchCode = list[0].code
 }, { immediate: true })
@@ -116,6 +120,9 @@ async function submit() {
       name: form.name.trim(), phone, ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
       ...(email ? { email } : {}),
     }, key)
+    resetReceipt()
+    pendingTime = ''
+    Object.assign(form, emptyRequest())
     trackedLookup = { branchCode: response.branchCode, folio: response.folio, phone }
     sentWithEmail.value = !!email
     sent.value = response
@@ -174,15 +181,6 @@ watch(() => sent.value?.status, (status) => {
 })
 onBeforeUnmount(resetReceipt)
 
-function another() {
-  resetReceipt()
-  form.time = ''
-  form.notes = ''
-  form.email = ''
-  key = newKey()
-  loadSlots()
-}
-
 // Consulta por folio y teléfono.
 const look = reactive({ branchCode: '', folio: '', phone: '' })
 const found = ref(null)
@@ -215,22 +213,21 @@ async function lookup() {
       </div>
       <div class="rsv-ticket">
         <p>Folio <strong>{{ sent.folio }}</strong></p>
-        <p>{{ sent.branchName }} · {{ dateText(sent.date) }} · {{ sent.time }}</p>
-        <p class="muted">{{ sent.name }} · {{ sent.partySize }} {{ sent.partySize === 1 ? 'persona' : 'personas' }}</p>
+        <p class="muted">Guarda el folio para consultar el estado con tu teléfono.</p>
       </div>
       <p v-if="statusError" class="rsv-error" role="alert">{{ statusError }}</p>
       <div class="rsv-actions">
         <button v-if="sent.status === 'PENDING'" type="button" class="rsv-primary" :disabled="checkingStatus" @click="updateStatus(true)">
           {{ checkingStatus ? 'Consultando…' : 'Actualizar estado' }}
         </button>
-        <button type="button" class="rsv-secondary" @click="another">Hacer otra solicitud</button>
+        <button type="button" class="rsv-secondary" @click="resetReceipt">Cerrar comprobante</button>
       </div>
     </div>
 
-    <form v-else class="rsv-card" novalidate @submit.prevent="submit">
+    <form class="rsv-card" novalidate @submit.prevent="submit">
       <p v-if="fromAssistant" class="rsv-assist" role="status">El asistente llenó la solicitud con lo que le dijiste. Revisa los datos y envíala.</p>
       <p v-if="!bookable.length" class="muted">En este momento no hay sucursales con reservas en línea.</p>
-      <template v-else>
+      <fieldset v-else :disabled="sending" aria-label="Datos de la solicitud" class="rsv-form-fields">
         <div class="rsv-row">
           <label>Sucursal
             <select v-model="form.branchCode" class="rsv-field">
@@ -241,6 +238,7 @@ async function lookup() {
           <label>Día<input v-model="form.date" class="rsv-field" type="date" :min="minDate" :max="maxDate" /></label>
           <label>Personas
             <select v-model.number="form.partySize" class="rsv-field">
+              <option value="" disabled>Elige</option>
               <option v-for="n in MAX_PARTY" :key="n" :value="n">{{ n }}</option>
             </select>
           </label>
@@ -263,8 +261,8 @@ async function lookup() {
           <label>Nombre<input v-model="form.name" class="rsv-field" maxlength="120" autocomplete="name" /></label>
           <label>Teléfono (10 dígitos)<input v-model="form.phone" class="rsv-field" maxlength="20" inputmode="tel" autocomplete="tel-national" /></label>
         </div>
-        <label v-if="emailAvailable">Correo para la confirmación (opcional)
-          <input v-model="form.email" class="rsv-field" type="email" maxlength="254" autocomplete="email" />
+        <label v-if="emailAvailable">Correo para el folio y la confirmación
+          <input v-model="form.email" class="rsv-field" type="email" maxlength="254" autocomplete="email" required />
         </label>
         <label>Comentarios (opcional)<input v-model="form.notes" class="rsv-field" maxlength="300" placeholder="Cumpleaños, silla para bebé…" /></label>
 
@@ -273,7 +271,7 @@ async function lookup() {
           <p class="muted small">{{ problem || 'La sucursal revisará tu solicitud antes de confirmarla.' }}</p>
           <button type="submit" class="rsv-primary" :disabled="!!problem || sending">{{ sending ? 'Enviando…' : 'Enviar solicitud' }}</button>
         </div>
-      </template>
+      </fieldset>
     </form>
 
     <details class="rsv-card rsv-lookup">
@@ -310,7 +308,8 @@ label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-w
 }
 .rsv-field:focus-visible, .rsv-slot:focus-within, button:focus-visible, summary:focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
 .mono { font-family: ui-monospace, monospace; text-transform: uppercase; letter-spacing: .08em; }
-fieldset { border: 0; margin: 0; padding: 0; }
+fieldset { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
+.rsv-form-fields { display: grid; gap: 16px; }
 legend { font-size: 13px; font-weight: 700; margin-bottom: 8px; padding: 0; }
 .rsv-slots { display: flex; flex-wrap: wrap; gap: 8px; }
 .rsv-slot {

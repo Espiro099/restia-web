@@ -26,7 +26,7 @@ beforeEach(() => {
 describe('menú del Figma', () => {
   it('el principal va en el orden del Figma y Configuración reúne los ajustes', () => {
     expect(modulesIn('main', () => true).map((m) => m.title)).toEqual([
-      'Ventas', 'Comandas', 'Menú', 'Inventario', 'Personal', 'Salón', 'Reportes', 'Reservaciones', 'Clientes', 'Caja y cobros', 'Facturación', 'Configuración',
+      'Ventas', 'Comandas', 'Menú', 'Inventario', 'Personal', 'Salón', 'Reportes', 'Reservaciones', 'Clientes', 'Caja y cobros', 'Configuración',
     ])
     expect(modulesIn('config', () => true).map((m) => m.key)).toEqual(['sucursal', 'dispositivos', 'impresion', 'avisos', 'auditoria'])
   })
@@ -88,6 +88,22 @@ describe('Ventas', () => {
 })
 
 describe('Comandas', () => {
+  it('actualiza el estado al volver al panel', async () => {
+    signIn(['orders.read'])
+    const units = vi.fn(async () => [])
+    const wrapper = mount(OrdersView, { props: { api: { units } }, global: { plugins: [makeRouter()] } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('No hay comandas en curso')
+    units.mockResolvedValueOnce([
+      { unit: { id: '1', orderId: 'abc12345', status: 'PREPARING', createdAt: '2026-11-24T20:00:00Z' }, tableNumbers: [5], productName: 'Pozole rojo' },
+    ])
+    window.dispatchEvent(new Event('focus'))
+    await flushPromises()
+    expect(wrapper.text()).toContain('Pozole rojo')
+    expect(wrapper.find('.summary').text()).toContain('1 en preparación')
+    wrapper.unmount()
+  })
+
   it('lista lo que sigue en curso con sus platillos y busca por mesa o platillo', async () => {
     signIn(['orders.read', 'tables.read'])
     const units = vi.fn(async () => [

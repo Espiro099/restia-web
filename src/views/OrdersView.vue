@@ -1,11 +1,12 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useSession } from '../stores/session.js'
 import { activeOrders, clock, dashboardApi, STAGE_TEXT } from '../lib/dashboard.js'
 import { errorText } from '../lib/errors.js'
+import { useVisibleRefresh } from '../lib/useVisibleRefresh.js'
 
 // Comandas (Figma "Restia web", 02 · Panel → Comandas): lo que sigue en curso en la sucursal, en el paso de
-// su platillo más atrasado. Solo lectura: la cocina y el mesero las mueven desde la app. Se actualiza cada 30 s.
+// su platillo más atrasado. La cocina y el mesero cambian el estado desde la app.
 const props = defineProps({ api: { type: Object, default: null } })
 const calls = props.api ?? dashboardApi()
 const session = useSession()
@@ -22,24 +23,33 @@ const rows = computed(() => {
     || o.products.some((p) => p.toLowerCase().includes(q)))
 })
 
+let request = 0
+let loading = false
 async function load() {
   const b = session.branchId
   if (!b) return
+  const current = ++request
+  loading = true
   try {
-    orders.value = activeOrders(await calls.units(b))
+    const units = await calls.units(b)
+    if (current !== request) return
+    orders.value = activeOrders(units)
     error.value = ''
   } catch (e) {
-    error.value = errorText(e)
+    if (current === request) error.value = errorText(e)
+  } finally {
+    if (current === request) loading = false
   }
 }
 
-let timer = null
-onMounted(() => {
+watch(() => session.branchId, () => {
+  request++
+  orders.value = null
+  error.value = ''
   load()
-  timer = setInterval(() => { if (document.visibilityState === 'visible') load() }, 30_000)
-})
-onBeforeUnmount(() => clearInterval(timer))
-watch(() => session.branchId, () => { orders.value = null; load() })
+}, { immediate: true })
+useVisibleRefresh(() => { if (!loading) load() }, 5_000)
+onBeforeUnmount(() => { request++ })
 
 /** "Pozole rojo, 2 × Agua de jamaica" */
 function dishes(products) {

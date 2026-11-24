@@ -110,6 +110,16 @@ describe('pantalla de Reportes', () => {
     expect(wrapper.findAll('svg [role="img"]').length).toBe(7 + 1)
   })
 
+  it('actualiza los totales en segundo plano y conserva el periodo seleccionado', async () => {
+    const wrapper = await mountIt()
+    calls.dailySales.mockResolvedValue([day('2026-11-16', '500.00', 3, 5)])
+    window.dispatchEvent(new Event('focus'))
+    await flushPromises()
+    expect(wrapper.findAll('.tile')[0].text()).toContain('$500.00 MXN')
+    expect(calls.hourlyOccupancy).toHaveBeenLastCalledWith('b1', { from: '2026-11-16', to: '2026-11-22' })
+    wrapper.unmount()
+  })
+
   it('las barras dicen su valor al enfocarlas con el teclado', async () => {
     const wrapper = await mountIt()
     await wrapper.find('svg [role="img"][tabindex="0"]').trigger('focus')

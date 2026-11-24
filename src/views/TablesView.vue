@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import QRCode from 'qrcode'
 import { useSession } from '../stores/session.js'
 import ErrorNotice from '../components/ErrorNotice.vue'
@@ -7,6 +7,7 @@ import ModalDialog from '../components/ModalDialog.vue'
 import { STATE_LABELS, STATUS_LABELS, byZone, nextNumber, tablesApi, tablesErrorText } from '../lib/tables.js'
 import { validReason } from '../lib/personal.js'
 import { useAction } from '../lib/useAction.js'
+import { useVisibleRefresh } from '../lib/useVisibleRefresh.js'
 
 const props = defineProps({ api: { type: Object, default: null } })
 const calls = props.api ?? tablesApi()
@@ -21,22 +22,32 @@ const canQr = computed(() => session.canHere('tables.qr_read'))
 const canRotate = computed(() => session.canHere('tables.qr_rotate'))
 
 let seq = 0
+let loading = false
 async function load() {
+  const branchId = session.branchId
+  if (!branchId) return
   const mine = ++seq
-  loadError.value = null
+  loading = true
   try {
-    const rows = await calls.list(session.branchId)
+    const rows = await calls.list(branchId)
     if (mine !== seq) return
     tables.value = rows
     loaded.value = true
+    loadError.value = null
   } catch (e) {
     if (mine === seq) loadError.value = e
+  } finally {
+    if (mine === seq) loading = false
   }
 }
 watch(() => session.branchId, () => {
+  seq++
   loaded.value = false
+  tables.value = []
+  loadError.value = null
   load()
 }, { immediate: true })
+onBeforeUnmount(() => { seq++ })
 
 const { busy, error, notice, run } = useAction(load, tablesErrorText)
 
@@ -48,6 +59,9 @@ const seats = computed(() => tables.value.filter((t) => t.status === 'ACTIVE').r
 
 // ---------------------------------------------------------------- Diálogos
 const dialog = ref(null)
+useVisibleRefresh(() => {
+  if (!loading && !busy.value) load()
+}, 5_000)
 
 function open(kind, table = null) {
   notice.value = ''

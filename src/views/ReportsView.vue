@@ -1,8 +1,9 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useSession } from '../stores/session.js'
 import ErrorNotice from '../components/ErrorNotice.vue'
 import BarChart from '../components/BarChart.vue'
+import { useVisibleRefresh } from '../lib/useVisibleRefresh.js'
 import {
   METHODS, PERIODS, change, isoDate, money, periodRange, previousRange, rangeProblem, reportsApi, shortDate, summarize, toCsv,
 } from '../lib/reports.js'
@@ -26,25 +27,31 @@ const loading = ref(false)
 const error = ref(null)
 
 let seq = 0
-async function load() {
-  if (problem.value) return
-  const mine = ++seq
+let refreshing = false
+async function load({ background = false } = {}) {
   const b = session.branchId
+  if (problem.value || !b) return
+  const mine = ++seq
   const r = range.value
   const prev = previousRange(r)
-  loading.value = true
-  error.value = null
+  refreshing = true
+  loading.value = !background
+  if (!background) error.value = null
   try {
     const [daily, hourly, prevDaily] = await Promise.all([
       calls.dailySales(b, r), calls.hourlyOccupancy(b, r), calls.dailySales(b, prev).catch(() => null),
     ])
     if (mine !== seq) return
+    error.value = null
     summary.value = summarize(daily, hourly, r.from, r.to)
     previous.value = prevDaily ? summarize(prevDaily, [], prev.from, prev.to) : null
   } catch (e) {
     if (mine === seq) error.value = e
   } finally {
-    if (mine === seq) loading.value = false
+    if (mine === seq) {
+      refreshing = false
+      loading.value = false
+    }
   }
 }
 
@@ -58,7 +65,19 @@ function choose(key) {
 }
 
 // Una clave de texto: pasar a "Fechas" con el mismo rango no vuelve a pedir los datos.
-watch(() => `${session.branchId}|${range.value.from}|${range.value.to}`, load, { immediate: true })
+watch(() => `${session.branchId}|${range.value.from}|${range.value.to}`, () => {
+  seq++
+  refreshing = false
+  loading.value = false
+  summary.value = null
+  previous.value = null
+  error.value = null
+  load()
+}, { immediate: true })
+useVisibleRefresh(() => {
+  if (!refreshing) load({ background: true })
+}, 15_000)
+onBeforeUnmount(() => { seq++ })
 
 const s = computed(() => summary.value)
 const p = computed(() => previous.value)
@@ -131,9 +150,9 @@ const todayIso = computed(() => isoDate(props.today()))
       <span class="count" aria-live="polite">{{ loading ? 'Cargando…' : '' }}</span>
     </div>
     <p v-if="problem" class="form-error" role="alert">{{ problem }}</p>
-    <ErrorNotice :error="error" @retry="load" />
+    <ErrorNotice :error="error" @retry="load()" />
 
-    <template v-if="s && !error && !problem">
+    <template v-if="s && !problem">
       <div class="tiles">
         <div v-for="t in tiles" :key="t.label" class="tile">
           <span class="tile-label">{{ t.label }}</span>
@@ -144,7 +163,7 @@ const todayIso = computed(() => isoDate(props.today()))
           <span v-else class="tile-change">Sin periodo anterior para comparar</span>
         </div>
       </div>
-      <p class="help extras">Reembolsos {{ money(s.refunds) }} · Cortesías {{ money(s.courtesies) }} · Facturado {{ money(s.invoiced) }}</p>
+      <p class="help extras">Reembolsos {{ money(s.refunds) }} · Cortesías {{ money(s.courtesies) }}</p>
 
       <p v-if="s.empty" class="box empty-row">Sin ventas en este periodo. Los cobros aparecen aquí unos segundos después de confirmarse.</p>
 

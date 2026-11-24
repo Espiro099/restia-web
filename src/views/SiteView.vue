@@ -24,6 +24,7 @@ const calls = props.api ?? siteApi()
 const route = useRoute()
 const { branches, state, assistant, reservationEmail, user, locating, selected, locate, loadBranches } = useSiteBranches(calls, () => props.geolocation)
 const manualReservation = ref('')
+const branchSelection = ref(0)
 const reserveCode = computed(() => manualReservation.value || (typeof route.query.sucursal === 'string' ? route.query.sucursal : ''))
 const proposal = ref(null)
 const opening = computed(() => branches.value.filter((b) => b.hours?.length))
@@ -36,6 +37,7 @@ function goReserve() {
 function reserveAt(code) {
   selected.value = code
   manualReservation.value = code
+  branchSelection.value++
   goReserve()
 }
 
@@ -130,7 +132,7 @@ onBeforeUnmount(() => { document.title = previousTitle })
             </ol>
             <RouterLink to="/privacidad" class="reservation-note">Política de privacidad</RouterLink>
           </div>
-          <SiteReservation :api="calls" :branches="branches" :branch-code="reserveCode" :proposal="proposal" :email-available="reservationEmail" />
+          <SiteReservation :api="calls" :branches="branches" :branch-code="reserveCode" :branch-selection="branchSelection" :proposal="proposal" :email-available="reservationEmail" />
         </div>
       </section>
 

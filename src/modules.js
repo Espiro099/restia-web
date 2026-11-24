@@ -25,8 +25,6 @@ export const MODULES = [
     description: 'Clientes registrados y su historial.' },
   { key: 'caja', title: 'Caja y cobros', permission: 'cash.read', nav: 'main',
     description: 'Cajas, turnos, movimientos y cortes.' },
-  { key: 'facturacion', title: 'Facturación', permission: 'invoices.read', nav: 'main',
-    description: 'Emisores, CSD, facturas, cancelación y factura global.' },
   { key: 'configuracion', title: 'Configuración', permission: null, nav: 'main',
     description: 'Sucursal, dispositivos, impresión, avisos y auditoría.' },
 

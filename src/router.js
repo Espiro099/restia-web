@@ -18,7 +18,6 @@ const BUILT = {
   reservaciones: () => import('./views/ReservationsView.vue'),
   dispositivos: () => import('./views/DevicesView.vue'),
   auditoria: () => import('./views/AuditView.vue'),
-  facturacion: () => import('./views/InvoicesView.vue'),
   inventario: () => import('./views/InventoryView.vue'),
   ventas: () => import('./views/SalesView.vue'),
   comandas: () => import('./views/OrdersView.vue'),
