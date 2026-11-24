@@ -6,7 +6,7 @@ import SiteHeader from '../components/site/SiteHeader.vue'
 import SiteFooter from '../components/site/SiteFooter.vue'
 import SiteLocations from '../components/site/SiteLocations.vue'
 import SiteReservation from '../components/site/SiteReservation.vue'
-import { hoursText, siteApi } from '../lib/site.js'
+import { hoursText, siteApi, telHref } from '../lib/site.js'
 import { featuredDishes, siteEmail } from '../lib/siteEditorial.js'
 import { useSiteBranches } from '../lib/useSiteBranches.js'
 import '@fontsource/lora/latin-700.css'
@@ -27,7 +27,7 @@ const manualReservation = ref('')
 const reserveCode = computed(() => manualReservation.value || (typeof route.query.sucursal === 'string' ? route.query.sucursal : ''))
 const proposal = ref(null)
 const opening = computed(() => branches.value.filter((b) => b.hours?.length))
-const contacts = computed(() => branches.value.filter((b) => b.phone))
+
 
 function goReserve() {
   document.getElementById('reservar')?.scrollIntoView?.({ block: 'start', behavior: window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches ? 'smooth' : 'instant' })
@@ -127,25 +127,7 @@ onBeforeUnmount(() => { document.title = previousTitle })
         </div>
       </section>
 
-      <section id="novedades" class="wrap section-space" aria-labelledby="news-title">
-        <div class="section-heading site-reveal">
-          <div><p class="site-kicker">Novedades</p><h2 id="news-title">Notas de La Mesa.</h2></div>
-        </div>
-        <div class="news-grid">
-          <details class="news-story site-reveal">
-            <summary><span class="news-title">Churros para la sobremesa</span><span class="story-toggle" aria-hidden="true">+</span></summary>
-            <p>Los servimos con canela y una taza de chocolate caliente para mojar. Pídelos al centro y acompáñalos con un café de olla.</p>
-            <a href="#menu" class="site-text-link">Ver selección de la carta <span aria-hidden="true">→</span></a>
-          </details>
-          <details class="news-story site-reveal">
-            <summary><span class="news-title">Una mesa larga en la terraza</span><span class="story-toggle" aria-hidden="true">+</span></summary>
-            <p>En Norte, las mesas de terraza se pueden juntar. Si vienen en grupo, elige el número de personas al solicitar la reserva.</p>
-            <a href="#reservar" class="site-text-link">Ver horarios disponibles <span aria-hidden="true">→</span></a>
-          </details>
-        </div>
-      </section>
-
-      <section id="nosotros" class="section-band" aria-labelledby="about-title">
+      <section id="nosotros" class="about-section" aria-labelledby="about-title">
         <div class="wrap section-space about-grid">
           <div class="site-photo team-photo site-reveal">
             <img :src="team" alt="Retrato ilustrativo de tres integrantes del equipo de cocina y salón" width="1200" height="800" loading="lazy" />
@@ -153,8 +135,8 @@ onBeforeUnmount(() => { document.title = previousTitle })
           <div class="site-reveal">
             <p class="site-kicker">Sobre nosotros</p>
             <h2 id="about-title">Quienes ponen la mesa.</h2>
-            <p class="site-copy">La Mesa nació como un proyecto estudiantil inspirado en las sobremesas mexicanas. Imaginamos dos sucursales y un equipo que trabaja de cerca, desde quien prepara el primer plato hasta quien te recibe en el salón.</p>
-            <p class="site-copy">La cocina, la barra y el servicio tienen algo en común: hacer que todos encuentren su lugar alrededor de la mesa.</p>
+            <p class="site-copy">Abrimos La Mesa con una idea sencilla: que comer juntos se sintiera como estar en casa. Nuestra cocina parte de los sabores de México y de una costumbre que nos encanta: pedir varios platos y compartirlos al centro.</p>
+            <p class="site-copy">En Guadalajara y Zapopan te recibimos con el mismo gusto. Mientras en cocina se enciende la parrilla, en barra se sirven las primeras bebidas y en el salón preparamos tu mesa. Si la conversación se alarga después del postre, mejor.</p>
           </div>
         </div>
       </section>
@@ -172,15 +154,44 @@ onBeforeUnmount(() => { document.title = previousTitle })
       </section>
 
       <section id="contacto" class="section-band" aria-labelledby="contact-title">
-        <div class="wrap section-space section-heading site-reveal">
-          <div><p class="site-kicker">Contacto</p><h2 id="contact-title">Hablemos.</h2></div>
-          <div class="contact-details">
-            <dl v-if="contacts.length">
-              <div v-for="branch in contacts" :key="branch.code"><dt>{{ branch.name }}</dt><dd>{{ branch.phone }}</dd></div>
-            </dl>
-            <p v-if="siteEmail">Correo <a :href="'mailto:' + siteEmail">{{ siteEmail }}</a></p>
-            <p v-else>Correo de ejemplo <span>hola@lamesa.example</span></p>
-            <p class="site-copy">Los números de las sucursales son de demostración.</p>
+        <div class="wrap section-space contact">
+          <header class="section-heading site-reveal">
+            <div>
+              <p class="site-kicker">Contacto</p>
+              <h2 id="contact-title">Planea tu visita.</h2>
+            </div>
+            <div>
+              <p class="site-copy">¿Vienes en grupo o quieres consultar algo antes de sentarte? Elige la sucursal que vas a visitar y ten a mano su teléfono, horarios y dirección.</p>
+              <a v-if="siteEmail" :href="'mailto:' + siteEmail" class="site-text-link">{{ siteEmail }} <span aria-hidden="true">↗</span></a>
+            </div>
+          </header>
+          <p v-if="state === 'loading'" role="status">Cargando datos de contacto…</p>
+          <p v-else-if="state === 'error'">
+            No pudimos cargar los datos de contacto.
+            <button type="button" class="site-retry" @click="loadBranches">Reintentar</button>
+          </p>
+          <p v-else-if="!branches.length">Los datos de contacto de las sucursales estarán disponibles próximamente.</p>
+          <div v-else class="contact-grid">
+            <article v-for="branch in branches" :key="branch.code" class="contact-card site-reveal">
+              <h3>{{ branch.name }}</h3>
+              <address v-if="branch.addressText">{{ branch.addressText }}</address>
+              <dl v-if="telHref(branch.phone) || branch.hours?.length" class="contact-data">
+                <div v-if="telHref(branch.phone)">
+                  <dt>Teléfono</dt>
+                  <dd><a :href="telHref(branch.phone)">{{ branch.phone }}</a></dd>
+                </div>
+                <div v-if="branch.hours?.length">
+                  <dt>Horario de reservas</dt>
+                  <dd>{{ hoursText(branch.hours) }}</dd>
+                </div>
+              </dl>
+              <div v-if="branch.reservations || branch.mapsUrl" class="contact-actions">
+                <button v-if="branch.reservations" type="button" class="site-action" @click="reserveAt(branch.code)">Reservar aquí</button>
+                <a v-if="branch.mapsUrl" :href="branch.mapsUrl" target="_blank" rel="noopener noreferrer" class="site-text-link">
+                  Cómo llegar <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </article>
           </div>
         </div>
       </section>
@@ -216,8 +227,7 @@ onBeforeUnmount(() => { document.title = previousTitle })
 .dish-preview { background: var(--paper); border: 1px solid var(--line); min-width: 0; border-radius: 14px; overflow: hidden; }
 .dish-preview .site-photo { aspect-ratio: 5 / 4; }
 .dish-copy { padding: clamp(14px, 1.8vw, 23px); }
-.dish-copy h3, .news-title { font-size: clamp(1.12rem, 1.75vw, 1.55rem); }
-.news-title { font-family: 'Lora', Georgia, serif; font-weight: 700; }
+.dish-copy h3 { font-size: clamp(1.12rem, 1.75vw, 1.55rem); }
 .dish-copy p { margin: 8px 0; line-height: 1.5; font-size: .9rem; color: var(--gray); }
 .dish-copy p:first-child { margin-top: 0; color: var(--clay-dark); font-size: .75rem; font-weight: 700; }
 .dish-copy strong { display: block; margin-top: 12px; }
@@ -230,29 +240,33 @@ onBeforeUnmount(() => { document.title = previousTitle })
 .visit > :deep(.rsv) { margin-top: 0; width: 100%; min-width: 0; }
 .reservation-note { font-size: .9rem; }
 .reservation-note a { font-weight: 700; text-underline-offset: .3em; }
-.news-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; align-items: start; }
-.news-story { border-block: 1px solid var(--line); padding: 6px 0; }
-.news-story summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; list-style: none; cursor: pointer; }
-.news-story summary::-webkit-details-marker { display: none; }
-.news-story summary:hover { color: var(--clay-dark); }
-.story-toggle { font-size: 1.55rem; }
-.news-story[open] .story-toggle { transform: rotate(45deg); }
-.news-story p { line-height: 1.6; color: var(--gray); max-width: 55ch; }
+.about-section { background: var(--paper); }
 .about-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: clamp(20px, 6vw, 86px); align-items: center; }
 .team-photo { aspect-ratio: 3 / 2; border-radius: 14px; }
 .site-retry { border: 0; color: var(--clay-dark); background: transparent; font: inherit; text-decoration: underline; cursor: pointer; }
-.contact-details dl { display: grid; gap: 10px; margin: 0; }
-.contact-details dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; }
-.contact-details dd { margin: 0; }
-.contact-details dt { font-weight: 700; }
-.contact-details a, .contact-details span { overflow-wrap: anywhere; }
-#contacto .section-heading { margin-bottom: 0; }
+.contact .section-heading { align-items: start; }
+.contact .section-heading .site-copy { margin: 0; }
+.contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 2vw, 26px); }
+.contact-card {
+  display: flex; flex-direction: column; gap: 13px; min-width: 0; padding: clamp(20px, 3vw, 36px);
+  border: 1px solid var(--line); border-top: 3px solid var(--clay); border-radius: 14px;
+  background: var(--paper);
+}
+.contact-card h3 { font-size: clamp(1.55rem, 3vw, 2.35rem); }
+.contact-card address { font-style: normal; line-height: 1.5; color: var(--gray); }
+.contact-data { display: grid; gap: 12px 20px; margin: 4px 0; padding-top: 16px; border-top: 1px solid var(--line); }
+.contact-data div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 14px; }
+.contact-data dt { font-weight: 700; font-size: .88rem; }
+.contact-data dd { margin: 0; }
+.contact-data a { text-underline-offset: .25em; }
+.contact-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: auto; padding-top: 7px; }
+.contact-actions button { border: 0; cursor: pointer; font-family: inherit; }
 
 @media (max-width: 1024px) {
   .dish-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
-  .site-hero, .section-heading, .visit, .about-grid, .news-grid { grid-template-columns: minmax(0, 1fr); }
+  .site-hero, .section-heading, .visit, .about-grid, .contact-grid { grid-template-columns: minmax(0, 1fr); }
   .site-hero { min-height: auto; }
   .hero-copy h1 { max-width: 10ch; font-size: clamp(3rem, 13vw, 5.25rem); }
   .hero-image { height: clamp(250px, 62vw, 420px); }
@@ -270,7 +284,6 @@ onBeforeUnmount(() => { document.title = previousTitle })
   .hero-copy .hero-lead { animation-delay: 120ms; }
   .hero-copy .hero-actions, .hero-copy .hero-hours { animation-delay: 180ms; }
   .hero-image { animation-delay: 90ms; }
-  .story-toggle { transition: transform 180ms ease-out; }
   @supports (animation-timeline: view()) {
     .site-reveal {
       animation: site-enter linear both;
