@@ -1,0 +1,49 @@
+.site {
+  --cream: #faf0e5;
+  --sand: #f2e3d3;
+  --ink: #382014;
+  --clay: #c74115;
+  --clay-dark: #a7350f;
+  --gray: #5d6466;
+  --paper: #fffaf4;
+  --accent: var(--clay);
+  --surface: var(--paper);
+  --line: #e7d7c4;
+  --muted: var(--gray);
+  --bg: var(--sand);
+  --text: var(--ink);
+  --danger: #a3260b;
+  --header-height: 78px;
+  --section-space: clamp(56px, 8vw, 116px);
+  min-height: 100vh;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+.site .wrap { width: min(100%, 1440px); margin-inline: auto; padding-inline: clamp(18px, 4vw, 56px); }
+.site main [id] { scroll-margin-top: calc(var(--header-height) + 12px); }
+.site :where(h1, h2, h3) { margin: 0; font-family: 'Lora', Georgia, serif; line-height: 1.12; letter-spacing: -.035em; }
+.site :where(h2) { font-size: clamp(2.15rem, 5vw, 4.15rem); }
+.site :where(a) { color: inherit; }
+.site :where(a, button, summary):focus-visible { outline: 2px solid var(--clay); outline-offset: 4px; }
+.site-kicker { margin: 0 0 12px; color: var(--clay-dark); text-transform: uppercase; letter-spacing: .16em; font-size: .75rem; font-weight: 700; }
+.site-copy { max-width: 58ch; margin: 16px 0 0; color: var(--gray); line-height: 1.65; }
+.site-action {
+  display: inline-flex; justify-content: center; align-items: center; gap: 10px; padding: 11px 17px; min-height: 46px;
+  border-radius: 8px; background: var(--clay); color: white; font-size: .88rem; font-weight: 700; text-decoration: none;
+}
+.site-action:hover { background: var(--clay-dark); }
+.site-text-link { display: inline-flex; align-items: center; gap: 8px; width: fit-content; min-height: 44px; font-weight: 700; text-underline-offset: .3em; }
+.site-text-link:hover { color: var(--clay-dark); }
+.site-photo { overflow: hidden; background: var(--sand); }
+.site-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (prefers-reduced-motion: no-preference) {
+  .site-action, .site-text-link span, .site-photo img { transition: transform 200ms ease-out, background-color 160ms ease; }
+  .site-action:active { transform: scale(.97); }
+  @media (hover: hover) and (pointer: fine) {
+    .site-action:hover { transform: translateY(-2px); }
+    .site-text-link:hover span { transform: translateX(4px); }
+    .site-photo:hover img { transform: scale(1.025); }
+  }
+}
+@media (max-width: 850px) { .site { --header-height: 100px; } }

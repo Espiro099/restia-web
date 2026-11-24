@@ -7,6 +7,7 @@ import {
 } from '../src/lib/site.js'
 import { generalChanges, generalForm, generalProblem, parseLocation } from '../src/lib/branch.js'
 import SiteView from '../src/views/SiteView.vue'
+import { routes } from '../src/router.js'
 import SiteReservation from '../src/components/site/SiteReservation.vue'
 
 const CENTRO = {
@@ -29,7 +30,7 @@ function fakeApi(overrides = {}) {
 }
 
 async function mountSite(api, geolocation = null) {
-  const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: SiteView }, { path: '/acceso', name: 'login', component: { template: '<p />' } }] })
+  const router = createRouter({ history: createMemoryHistory(), routes })
   router.push('/')
   await router.isReady()
   const wrapper = mount(SiteView, { props: { api, geolocation }, global: { plugins: [router], stubs: STUBS }, attachTo: document.body })
@@ -99,6 +100,16 @@ describe('sitio público: datos', () => {
 })
 
 describe('sitio público: página', () => {
+  it('preselecciona la sucursal del enlace cuando llegan los horarios de sucursales', async () => {
+    const api = fakeApi()
+    const wrapper = mount(SiteReservation, { props: { api, branches: [], branchCode: ZAPOPAN.code } })
+    await wrapper.setProps({ branches: [CENTRO, { ...ZAPOPAN, reservations: true }] })
+    await flushPromises()
+    expect(wrapper.find('form.rsv-card select').element.value).toBe(ZAPOPAN.code)
+    expect(api.slots).toHaveBeenCalledWith(ZAPOPAN.code, expect.any(String), 2)
+    wrapper.unmount()
+  })
+
   it('muestra las sucursales y, con la ubicación, marca la más cercana', async () => {
     const geolocation = { getCurrentPosition: vi.fn((ok) => ok({ coords: { latitude: 20.721, longitude: -103.389 } })) }
     const wrapper = await mountSite(fakeApi(), geolocation)

@@ -37,6 +37,8 @@ const moduleRoutes = MODULES.map((m) => ({
 export const routes = [
   // Sitio de La Mesa para clientes: sin sesión, como el menú del QR.
   { path: '/', name: 'sitio', component: () => import('./views/SiteView.vue'), meta: { anonymous: true } },
+  { path: '/como-llegar', name: 'como-llegar', component: () => import('./views/SiteDirectionsView.vue'), meta: { anonymous: true } },
+  { path: '/privacidad', name: 'privacidad', component: () => import('./views/SitePrivacyView.vue'), meta: { anonymous: true } },
   // Acceso directo del personal al panel.
   { path: '/acceso', name: 'login', component: LandingView, meta: { public: true } },
   // Menú del QR de cada mesa (`/m#token`): para clientes, sin sesión. Es la URL que imprime la API.
@@ -63,7 +65,20 @@ export async function guard(to, session) {
 }
 
 export function makeRouter(history = createWebHistory()) {
-  const router = createRouter({ history, routes })
+  const router = createRouter({
+    history, routes,
+    scrollBehavior(to, from, savedPosition) {
+      if (!['sitio', 'como-llegar', 'privacidad'].includes(to.name)) return
+      if (savedPosition) return savedPosition
+      const target = to.name === 'sitio' && to.hash && document.getElementById(to.hash.slice(1))
+      if (target) {
+        const top = Number.parseFloat(getComputedStyle(target).scrollMarginTop) || 0
+        const smooth = from.name === to.name && window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches
+        return { el: target, top, behavior: smooth ? 'smooth' : 'instant' }
+      }
+      return { top: 0, behavior: 'instant' }
+    },
+  })
   router.beforeEach((to) => guard(to, useSession()))
   return router
 }
