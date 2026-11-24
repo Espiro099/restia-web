@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AssistantChat from '../components/AssistantChat.vue'
 import SiteLocations from '../components/site/SiteLocations.vue'
 import SiteReservation from '../components/site/SiteReservation.vue'
-import { MAX_CHARS, byDistance, siteApi, siteAssistantErrorText } from '../lib/site.js'
+import { byDistance, siteApi } from '../lib/site.js'
 import '@fontsource/lora/latin-700.css'
 import '@fontsource/manrope/latin-400.css'
 import '@fontsource/manrope/latin-700.css'
@@ -77,8 +77,6 @@ function onDraft(draft) {
   if (draft.branchCode) selected.value = draft.branchCode
   goReserve()
 }
-
-const SUGGESTIONS = ['¿Cuál es la sucursal más cercana?', '¿Qué me recomiendas?', 'Quiero reservar una mesa']
 
 let previousTitle = ''
 onMounted(async () => {
@@ -170,9 +168,7 @@ onBeforeUnmount(() => { document.title = previousTitle })
       </section>
     </main>
 
-    <AssistantChat v-if="assistant" class="site-chat" :ask="calls.ask" restaurant="La Mesa"
-      hint="Pregunta por la carta, las sucursales o los horarios. También te ayudo a pedir una reserva."
-      :suggestions="SUGGESTIONS" fab-label="¿Te ayudo?" :error-text="siteAssistantErrorText" :max-chars="MAX_CHARS" @draft="onDraft" />
+    <AssistantChat v-if="assistant" class="site-chat" :ask="calls.ask" restaurant="La Mesa" @draft="onDraft" />
 
     <footer class="foot">
       <div class="wrap foot-row">

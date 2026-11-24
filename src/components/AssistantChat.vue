@@ -1,8 +1,8 @@
 <script setup>
 import { nextTick, ref } from 'vue'
-import { assistantErrorText, MAX_CHARS as QR_MAX_CHARS } from '../lib/publicMenu.js'
+import { MAX_CHARS, siteAssistantErrorText } from '../lib/site.js'
 
-// Asistente con Claude (QR-14 y SITE-3 en restia-api): un botón flotante abre el chat. La conversación vive
+// Asistente del sitio de La Mesa con Claude (SITE-3 en restia-api): un botón flotante abre el chat. La conversación vive
 // solo en esta página (no se guarda en ningún lado) y se manda completa con cada pregunta.
 const props = defineProps({
   /**
@@ -11,11 +11,11 @@ const props = defineProps({
    */
   ask: { type: Function, required: true },
   restaurant: { type: String, default: 'La Mesa' },
-  hint: { type: String, default: 'Pregunta por platillos, precios o la sucursal. Para pedir, llama a tu mesero.' },
-  suggestions: { type: Array, default: () => ['¿Qué me recomiendas?', '¿Qué hay sin alcohol?', '¿Qué postres tienen?'] },
-  fabLabel: { type: String, default: '¿Dudas del menú?' },
-  errorText: { type: Function, default: assistantErrorText },
-  maxChars: { type: Number, default: QR_MAX_CHARS },
+  hint: { type: String, default: 'Pregunta por la carta, las sucursales o los horarios. También te ayudo a pedir una reserva.' },
+  suggestions: { type: Array, default: () => ['¿Cuál es la sucursal más cercana?', '¿Qué me recomiendas?', 'Quiero reservar una mesa'] },
+  fabLabel: { type: String, default: '¿Te ayudo?' },
+  errorText: { type: Function, default: siteAssistantErrorText },
+  maxChars: { type: Number, default: MAX_CHARS },
 })
 const emit = defineEmits(['draft'])
 

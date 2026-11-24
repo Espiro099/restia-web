@@ -34,8 +34,6 @@ export function publicMenuApi({ fetch: doFetch = globalThis.fetch.bind(globalThi
     menu: (token) => request('GET', '/public/menu', token),
     /** Avisa al personal que alguien abrió el menú en la mesa (posible ocupación). Si falla, no importa. */
     presence: (token) => request('POST', '/public/presence', token).catch(() => null),
-    /** Pregunta al asistente del menú (QR-14) con la conversación completa; devuelve el texto de la respuesta. */
-    ask: async (token, messages) => (await request('POST', '/public/assistant', token, { messages: conversationForApi(messages) })).data.reply,
   }
 }
 
@@ -72,39 +70,4 @@ export function publicErrorText(error) {
   if (error?.status === 401 || error?.code === 'QR_TOKEN_INVALID') return 'Este código ya no está disponible. Pide ayuda al personal.'
   if (error?.status === 429) return 'Demasiadas consultas seguidas. Espera un momento.'
   return 'No pudimos cargar el menú. Intenta de nuevo en un momento.'
-}
-
-/** Máximo de mensajes que acepta la API (QR-14): la conversación se recorta por el principio. */
-export const MAX_TURNS = 12
-export const MAX_CHARS = 500
-
-/**
- * La conversación como la pide la API: alterna cliente y asistente, empieza y termina con el cliente y
- * tiene a lo más MAX_TURNS mensajes. Los errores mostrados en el chat no se mandan.
- */
-export function conversationForApi(messages) {
-  const clean = messages.filter((m) => !m.error).map((m) => ({ role: m.role, content: m.content.slice(0, MAX_CHARS) }))
-  let list = clean.slice(-MAX_TURNS)
-  while (list.length && list[0].role !== 'user') list = list.slice(1)
-  return list
-}
-
-export function assistantErrorText(error) {
-  if (error?.code === 'NETWORK') return 'No hay conexión. Revisa tu internet e intenta de nuevo.'
-  if (error?.status === 429) return 'Hiciste varias preguntas seguidas. Espera un minuto y vuelve a intentar.'
-  if (error?.status === 503 || error?.code === 'SERVICE_BUSY') return 'El asistente no está disponible ahorita. Pregúntale a tu mesero.'
-  return 'No pude responder. Intenta de nuevo o pregúntale a tu mesero.'
-}
-
-/** "Av. Juárez 120, Centro, 44100 Guadalajara, Jalisco" */
-export function addressText(address) {
-  if (!address?.line1) return ''
-  const place = [address.postalCode, address.city].filter(Boolean).join(' ')
-  return [address.line1, address.line2, place, address.state].filter(Boolean).join(', ')
-}
-
-/** Enlace de llamada a partir del teléfono de la sucursal (solo dígitos y +). */
-export function telHref(phone) {
-  const digits = String(phone ?? '').replace(/[^\d+]/g, '')
-  return digits.length >= 7 ? `tel:${digits}` : ''
 }
