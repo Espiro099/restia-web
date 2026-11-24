@@ -1,5 +1,6 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
+import { routeLocationKey } from 'vue-router'
 import { useSession } from '../stores/session.js'
 import ErrorNotice from '../components/ErrorNotice.vue'
 import ModalDialog from '../components/ModalDialog.vue'
@@ -29,8 +30,17 @@ const perms = computed(() => ({
   customers: session.canHere('customers.read'),
 }))
 
-const day = ref(isoDate(props.today()))
+const route = inject(routeLocationKey, null)
+const requestedDate = computed(() => typeof route?.query.dia === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(route.query.dia) ? route.query.dia : '')
+const requestedId = computed(() => typeof route?.query.solicitud === 'string' ? route.query.solicitud : '')
+const day = ref(requestedId.value && requestedDate.value || isoDate(props.today()))
 const status = ref('')
+watch([requestedDate, requestedId], ([date, id]) => {
+  if (date && id) {
+    day.value = date
+    status.value = ''
+  }
+})
 const rows = ref([])
 const tableNumber = ref(new Map())
 const loading = ref(false)
@@ -51,7 +61,7 @@ async function load() {
     if (mine === seq) loading.value = false
   }
 }
-watch(() => `${session.branchId}|${day.value}|${status.value}`, load, { immediate: true })
+watch(() => `${session.branchId}|${day.value}|${status.value}|${requestedId.value}`, load, { immediate: true })
 watch(() => session.branchId, async () => {
   try {
     tableNumber.value = new Map((await calls.tables(session.branchId)).map((t) => [t.id, t.number]))
@@ -200,7 +210,7 @@ const dayTitle = computed(() => {
       <table class="data-table">
         <thead><tr><th scope="col">Hora</th><th scope="col">Cliente</th><th scope="col">Personas</th><th scope="col">Estado</th><th scope="col"><span class="sr-only">Acciones</span></th></tr></thead>
         <tbody>
-          <tr v-for="r in rows" :key="r.id">
+          <tr v-for="r in rows" :key="r.id" :class="{ 'requested-row': r.id === requestedId }">
             <td><span class="cell-main">{{ hhmm(r.startAt) }}</span><span class="cell-sub">a {{ hhmm(r.endAt) }}</span></td>
             <td>
               <span class="cell-main">{{ r.customer.name }}</span>
@@ -266,6 +276,7 @@ const dayTitle = computed(() => {
 </template>
 
 <style scoped>
+.requested-row > td { background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
 .days { display: flex; gap: 6px; align-items: center; }
 .day-title { margin: 0 0 10px; font-size: 1rem; color: var(--muted); }
 </style>

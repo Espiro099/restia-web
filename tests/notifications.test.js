@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { badgeText, noticeAge, noticeTarget, notificationsApi } from '../src/lib/notifications.js'
+import { badgeText, noticeAge, noticeDestination, noticeTarget, notificationsApi } from '../src/lib/notifications.js'
 import { useSession } from '../src/stores/session.js'
 import NoticeBell from '../src/components/NoticeBell.vue'
 
@@ -12,9 +12,16 @@ describe('avisos: reglas', () => {
   it('lleva cada tipo a su módulo si se tiene el permiso', () => {
     const all = () => true
     expect(noticeTarget({ type: 'LOW_STOCK' }, all)).toBe('inventario')
+    expect(noticeTarget({ type: 'RESERVATION_REQUESTED' }, all)).toBe('reservaciones')
     expect(noticeTarget({ type: 'PAYMENT_UNKNOWN' }, all)).toBe('caja')
     expect(noticeTarget({ type: 'CHECK_REQUESTED' }, (p) => p !== 'cash.read')).toBeNull()
     expect(noticeTarget({ type: 'OTRO' }, all)).toBeNull()
+  })
+
+  it('abre el día y la solicitud desde un aviso de reserva', () => {
+    expect(noticeDestination({
+      type: 'RESERVATION_REQUESTED', reservationId: 'r1', reservationStartAt: '2026-11-26T12:00:00',
+    }, () => true)).toEqual({ name: 'reservaciones', query: { dia: '2026-11-26', solicitud: 'r1' } })
   })
 
   it('dice la antigüedad en palabras', () => {
@@ -66,6 +73,7 @@ describe('campana del panel', () => {
 
   it('muestra cuántos hay sin leer y al abrir lista los avisos', async () => {
     const wrapper = await mountBell()
+    expect(wrapper.find('.bell').classes()).not.toContain('ringing')
     const bell = wrapper.find('.bell')
     expect(bell.attributes('aria-label')).toBe('Avisos, 1 sin leer')
     expect(wrapper.find('.badge').text()).toBe('1')
@@ -109,11 +117,25 @@ describe('campana del panel', () => {
     expect(wrapper.text()).toContain('No se pudieron cargar los avisos')
   })
 
-  it('pregunta otra vez cada 30 segundos mientras la pestaña está a la vista', async () => {
+  it('anima la campana cuando llega una solicitud de reserva nueva', async () => {
+    const wrapper = await mountBell()
+    calls.latest.mockResolvedValueOnce({
+      items: [{ ...stock, id: 'n3', type: 'RESERVATION_REQUESTED', title: 'Nueva solicitud de reserva' }, stock],
+      unread: 2,
+    })
+    window.dispatchEvent(new Event('focus'))
+    await flushPromises()
+    expect(wrapper.find('.bell').classes()).toContain('ringing')
+    expect(wrapper.find('[role="status"]').text()).toBe('Nueva solicitud de reserva')
+    expect(wrapper.find('.badge').text()).toBe('2')
+    wrapper.unmount()
+  })
+
+  it('pregunta otra vez cada 10 segundos mientras la pestaña está a la vista', async () => {
     vi.useFakeTimers()
     await mountBell()
     expect(calls.latest).toHaveBeenCalledTimes(1)
-    await vi.advanceTimersByTimeAsync(30_000)
+    await vi.advanceTimersByTimeAsync(10_000)
     expect(calls.latest).toHaveBeenCalledTimes(2)
   })
 })

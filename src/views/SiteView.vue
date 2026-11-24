@@ -22,7 +22,7 @@ const props = defineProps({
 })
 const calls = props.api ?? siteApi()
 const route = useRoute()
-const { branches, state, assistant, user, locating, selected, locate, loadBranches } = useSiteBranches(calls, () => props.geolocation)
+const { branches, state, assistant, reservationEmail, user, locating, selected, locate, loadBranches } = useSiteBranches(calls, () => props.geolocation)
 const manualReservation = ref('')
 const reserveCode = computed(() => manualReservation.value || (typeof route.query.sucursal === 'string' ? route.query.sucursal : ''))
 const proposal = ref(null)
@@ -66,7 +66,7 @@ onBeforeUnmount(() => { document.title = previousTitle })
             <RouterLink :to="{ path: '/', hash: '#menu' }" class="site-text-link">Descubre la carta <span aria-hidden="true">↓</span></RouterLink>
           </div>
           <div class="hero-hours">
-            <h2>Horario de apertura · demostración</h2>
+            <h2>Horarios de reserva</h2>
             <ul v-if="opening.length">
               <li v-for="branch in opening" :key="branch.code">
                 <strong>{{ branch.name }}</strong><span>{{ hoursText(branch.hours) }}</span>
@@ -97,6 +97,9 @@ onBeforeUnmount(() => { document.title = previousTitle })
               </div>
             </article>
           </div>
+          <RouterLink :to="{ path: '/', hash: '#reservar' }" class="site-text-link menu-reserve">
+            Elige fecha y sucursal <span aria-hidden="true">→</span>
+          </RouterLink>
         </div>
       </section>
 
@@ -117,13 +120,17 @@ onBeforeUnmount(() => { document.title = previousTitle })
 
       <section id="reservar" class="section-band reservation-band" aria-labelledby="visit-title">
         <div class="wrap section-space visit">
-          <div class="site-reveal">
-            <p class="site-kicker">Reservas en línea</p>
-            <h2 id="visit-title">Nos vemos en La Mesa.</h2>
-            <p class="site-copy">Elige sucursal, día y hora. Recibirás un folio para consultar el estado mientras la sucursal revisa tu solicitud.</p>
-            <p class="reservation-note">Usa datos de prueba. <RouterLink to="/privacidad">Política de privacidad</RouterLink></p>
+          <div class="visit-intro site-reveal">
+            <h2 id="visit-title">Reserva una mesa.</h2>
+            <p class="site-copy">Para una comida entre amigos o una sobremesa en familia, elige la sucursal y el horario que mejor te queden.</p>
+            <ol class="visit-steps">
+              <li>Elige un horario disponible.</li>
+              <li>Envía tu solicitud y guarda el folio.</li>
+              <li>Consulta si la sucursal confirmó tu mesa.</li>
+            </ol>
+            <RouterLink to="/privacidad" class="reservation-note">Política de privacidad</RouterLink>
           </div>
-          <SiteReservation :api="calls" :branches="branches" :branch-code="reserveCode" :proposal="proposal" />
+          <SiteReservation :api="calls" :branches="branches" :branch-code="reserveCode" :proposal="proposal" :email-available="reservationEmail" />
         </div>
       </section>
 
@@ -238,8 +245,12 @@ onBeforeUnmount(() => { document.title = previousTitle })
 .terrace-photo { height: clamp(200px, 34vw, 480px); }
 .visit { display: grid; grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr); align-items: start; gap: clamp(20px, 5vw, 72px); }
 .visit > :deep(.rsv) { margin-top: 0; width: 100%; min-width: 0; }
-.reservation-note { font-size: .9rem; }
-.reservation-note a { font-weight: 700; text-underline-offset: .3em; }
+.menu-reserve { margin-top: 20px; }
+.visit-intro .site-copy { max-width: 35ch; }
+.visit-steps { margin: 26px 0 18px; padding-inline-start: 1.5em; max-width: 38ch; }
+.visit-steps li { padding: 10px 0 10px .35em; border-bottom: 1px solid var(--line); }
+.visit-steps li::marker { font-weight: 700; color: var(--clay-dark); }
+.reservation-note { font-size: .875rem; font-weight: 700; text-underline-offset: .3em; }
 .about-section { background: var(--paper); }
 .about-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: clamp(20px, 6vw, 86px); align-items: center; }
 .team-photo { aspect-ratio: 3 / 2; border-radius: 14px; }
@@ -249,7 +260,7 @@ onBeforeUnmount(() => { document.title = previousTitle })
 .contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 2vw, 26px); }
 .contact-card {
   display: flex; flex-direction: column; gap: 13px; min-width: 0; padding: clamp(20px, 3vw, 36px);
-  border: 1px solid var(--line); border-top: 3px solid var(--clay); border-radius: 14px;
+  border: 1px solid var(--line); border-radius: 14px;
   background: var(--paper);
 }
 .contact-card h3 { font-size: clamp(1.55rem, 3vw, 2.35rem); }

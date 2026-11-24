@@ -49,7 +49,7 @@ describe('sitio público: datos', () => {
     expect(init.headers['Idempotency-Key']).toBe('k-1')
     await api.slots('CENTRO', '2026-11-28', 4)
     expect(fetch.mock.calls[1][0]).toBe('/api/v1/public/site/branches/CENTRO/availability?date=2026-11-28&partySize=4')
-    expect(await api.branches()).toEqual({ branches: { folio: 'X' }, assistant: true })
+    expect(await api.branches()).toEqual({ branches: { folio: 'X' }, assistant: true, reservationEmail: false })
   })
 
   it('ordena por distancia, la más cercana primero, y la escribe', () => {
@@ -140,6 +140,26 @@ describe('sitio público: página', () => {
     wrapper.unmount()
   })
 
+  it('solicita correo si está habilitado y muestra el cambio a confirmada', async () => {
+    const api = fakeApi()
+    const wrapper = mount(SiteReservation, { props: { api, branches: [CENTRO], emailAvailable: true } })
+    await flushPromises()
+    await wrapper.find('input[value="20:00"]').setValue(true)
+    await wrapper.find('input[autocomplete="name"]').setValue('Ana')
+    await wrapper.find('input[autocomplete="tel-national"]').setValue('3311112222')
+    await wrapper.find('input[type="email"]').setValue('ana@example.com')
+    await wrapper.find('form.rsv-card').trigger('submit')
+    await flushPromises()
+    expect(api.createRequest).toHaveBeenCalledWith(expect.objectContaining({ email: 'ana@example.com' }), expect.any(String))
+    expect(wrapper.find('.rsv-done h3').text()).toBe('Solicitud recibida')
+    expect(wrapper.find('.rsv-done').text()).toContain('te enviaremos un correo')
+    await wrapper.find('.rsv-actions .rsv-primary').trigger('click')
+    await flushPromises()
+    expect(api.lookup).toHaveBeenCalledWith({ branchCode: 'CENTRO', folio: 'ABCD2345', phone: '3311112222' })
+    expect(wrapper.find('.rsv-done h3').text()).toBe('Reserva confirmada')
+    wrapper.unmount()
+  })
+
   it('la propuesta del asistente llena el formulario, pero no lo envía', async () => {
     const api = fakeApi({ ask: vi.fn(async () => ({ reply: 'Revisa los datos', reservationDraft: { branchCode: 'CENTRO', date: localDate(2), time: '20:00', partySize: 3, name: 'Luis', phone: '3311112222' } })) })
     const wrapper = await mountSite(api)
@@ -154,7 +174,7 @@ describe('sitio público: página', () => {
     await wrapper.find('form.rsv-card').trigger('submit')
     await flushPromises()
     expect(api.createRequest).toHaveBeenCalledWith({ branchCode: 'CENTRO', date: localDate(2), time: '20:00', partySize: 3, name: 'Luis', phone: '3311112222' }, expect.any(String))
-    expect(wrapper.find('.rsv-folio').text()).toContain('ABCD2345')
+    expect(wrapper.find('.rsv-ticket strong').text()).toContain('ABCD2345')
     wrapper.unmount()
   })
 })

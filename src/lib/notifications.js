@@ -1,10 +1,11 @@
 import { api as defaultApi } from './client.js'
+import { isoDate } from './reports.js'
 
 // Avisos de la campana (NotificationController en restia-api). Cada quien ve solo los suyos en la sucursal.
 // En el panel llegan sobre todo los de gerencia: stock bajo, cuenta solicitada y pagos sin confirmar.
 
 /** Cada cuánto se pregunta por avisos nuevos mientras la pestaña está a la vista. */
-export const POLL_MS = 30_000
+export const POLL_MS = 10_000
 
 /** Módulo del panel donde se atiende cada tipo de aviso, y el permiso para abrirlo. */
 const TARGETS = {
@@ -13,6 +14,7 @@ const TARGETS = {
   PAYMENT_CONFIRMED: { module: 'caja', permission: 'cash.read' },
   PAYMENT_FAILED: { module: 'caja', permission: 'cash.read' },
   PAYMENT_UNKNOWN: { module: 'caja', permission: 'cash.read' },
+  RESERVATION_REQUESTED: { module: 'reservaciones', permission: 'reservations.read' },
   ORDER_READY: { module: 'mesas', permission: 'tables.read' },
 }
 
@@ -20,6 +22,17 @@ const TARGETS = {
 export function noticeTarget(notice, canOpen) {
   const t = TARGETS[notice?.type]
   return t && canOpen(t.permission) ? t.module : null
+}
+
+/** Abre la fecha de la agenda que corresponde a una solicitud web. */
+export function noticeDestination(notice, canOpen) {
+  const name = noticeTarget(notice, canOpen)
+  if (!name) return null
+  const at = new Date(notice.reservationStartAt ?? '')
+  if (name === 'reservaciones' && notice.reservationId && !Number.isNaN(at.getTime())) {
+    return { name, query: { dia: isoDate(at), solicitud: notice.reservationId } }
+  }
+  return { name }
 }
 
 /** "Ahora", "Hace 5 min", "Hace 2 h", "Ayer" o la fecha corta. */

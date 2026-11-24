@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import {
   MAX_DAYS_AHEAD, MAX_PARTY, REQUEST_STATUS, dateText, localDate, newKey, phoneDigits, requestErrorText, requestProblem,
 } from '../../lib/site.js'
@@ -10,6 +10,7 @@ import {
 const props = defineProps({
   api: { type: Object, required: true },
   branches: { type: Array, required: true },
+  emailAvailable: { type: Boolean, default: false },
   /** Sucursal elegida en el mapa. */
   branchCode: { type: String, default: '' },
   /** { draft, n }: propuesta del asistente; `n` cambia con cada propuesta nueva. */
@@ -17,7 +18,7 @@ const props = defineProps({
 })
 
 const bookable = computed(() => props.branches.filter((b) => b.reservations))
-const form = reactive({ branchCode: '', date: localDate(1), partySize: 2, time: '', name: '', phone: '', notes: '' })
+const form = reactive({ branchCode: '', date: localDate(1), partySize: 2, time: '', name: '', phone: '', notes: '', email: '' })
 const slots = ref([])
 const slotsState = ref('idle') // idle | loading | ready | error
 const slotsError = ref('')
@@ -25,6 +26,15 @@ const fromAssistant = ref(false)
 const sending = ref(false)
 const sendError = ref('')
 const sent = ref(null)
+const receipt = ref(null)
+const sentWithEmail = ref(false)
+const checkingStatus = ref(false)
+const statusError = ref('')
+let statusTimer = null
+let statusRequest = null
+let trackedLookup = null
+const statusInterval = 20_000
+const statusWatchLimit = 30
 let key = newKey()
 let slotsRequest = 0
 /** Hora que propuso el asistente: se aplica cuando lleguen los horarios de ese día. */
@@ -32,7 +42,16 @@ let pendingTime = ''
 
 const minDate = localDate(0)
 const maxDate = localDate(MAX_DAYS_AHEAD)
-const problem = computed(() => requestProblem(form))
+const problem = computed(() => requestProblem(form) ||
+  (props.emailAvailable && form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
+    ? 'Revisa el correo para enviarte la confirmación.' : ''))
+const sentMessage = computed(() => {
+  if (!sent.value) return ''
+  if (sent.value.status !== 'PENDING') return REQUEST_STATUS[sent.value.status] ?? sent.value.status
+  return sentWithEmail.value
+    ? 'Cuando la sucursal confirme, te enviaremos un correo.'
+    : 'La sucursal revisará tu solicitud. Puedes volver a consultar con tu folio y teléfono.'
+})
 const branchName = (code) => props.branches.find((b) => b.code === code)?.name ?? code
 
 watch([() => props.branchCode, bookable], ([code, list], [previousCode, previousList]) => {
@@ -42,6 +61,7 @@ watch([() => props.branchCode, bookable], ([code, list], [previousCode, previous
 }, { immediate: true })
 
 async function loadSlots() {
+  const mine = ++slotsRequest
   const wanted = pendingTime || form.time
   form.time = ''
   slots.value = []
@@ -49,7 +69,6 @@ async function loadSlots() {
     slotsState.value = 'idle'
     return
   }
-  const mine = ++slotsRequest
   slotsState.value = 'loading'
   try {
     const list = await props.api.slots(form.branchCode, form.date, form.partySize)
@@ -72,7 +91,7 @@ watch(form, () => { key = newKey() })
 watch(() => props.proposal?.n, () => {
   const d = props.proposal?.draft
   if (!d) return
-  sent.value = null
+  resetReceipt()
   sendError.value = ''
   if (d.branchCode && bookable.value.some((b) => b.code === d.branchCode)) form.branchCode = d.branchCode
   if (d.date && d.date >= minDate && d.date <= maxDate) form.date = d.date
@@ -90,11 +109,19 @@ async function submit() {
   sending.value = true
   sendError.value = ''
   try {
-    sent.value = await props.api.createRequest({
+    const phone = phoneDigits(form.phone)
+    const email = props.emailAvailable ? form.email.trim() : ''
+    const response = await props.api.createRequest({
       branchCode: form.branchCode, date: form.date, time: form.time, partySize: form.partySize,
-      name: form.name.trim(), phone: phoneDigits(form.phone), ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
+      name: form.name.trim(), phone, ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
+      ...(email ? { email } : {}),
     }, key)
+    trackedLookup = { branchCode: response.branchCode, folio: response.folio, phone }
+    sentWithEmail.value = !!email
+    sent.value = response
     fromAssistant.value = false
+    await nextTick()
+    receipt.value?.focus()
   } catch (e) {
     sendError.value = requestErrorText(e)
     if (e?.code === 'RESERVATION_NOT_AVAILABLE') loadSlots()
@@ -103,10 +130,55 @@ async function submit() {
   }
 }
 
-function another() {
+function resetReceipt() {
+  clearInterval(statusTimer)
+  statusRequest = null
+  trackedLookup = null
+  statusError.value = ''
+  checkingStatus.value = false
   sent.value = null
+}
+
+async function updateStatus(manual = false) {
+  if (statusRequest || !trackedLookup || sent.value?.status !== 'PENDING') return
+  const token = Symbol()
+  statusRequest = token
+  if (manual) {
+    checkingStatus.value = true
+    statusError.value = ''
+  }
+  try {
+    const response = await props.api.lookup(trackedLookup)
+    if (statusRequest !== token) return
+    sent.value = response
+    statusError.value = ''
+  } catch (e) {
+    if (statusRequest === token && manual) statusError.value = requestErrorText(e)
+  } finally {
+    if (statusRequest === token) {
+      statusRequest = null
+      checkingStatus.value = false
+    }
+  }
+}
+
+watch(() => sent.value?.status, (status) => {
+  clearInterval(statusTimer)
+  if (status !== 'PENDING') return
+  let attempts = 0
+  statusTimer = setInterval(() => {
+    if (document.visibilityState !== 'visible') return
+    updateStatus()
+    if (++attempts >= statusWatchLimit) clearInterval(statusTimer)
+  }, statusInterval)
+})
+onBeforeUnmount(resetReceipt)
+
+function another() {
+  resetReceipt()
   form.time = ''
   form.notes = ''
+  form.email = ''
   key = newKey()
   loadSlots()
 }
@@ -136,17 +208,28 @@ async function lookup() {
 
 <template>
   <div class="rsv">
-    <div v-if="sent" class="rsv-card rsv-done" role="status">
-      <p class="rsv-kicker">Solicitud enviada</p>
-      <p class="rsv-folio">Folio <strong>{{ sent.folio }}</strong></p>
-      <p>{{ sent.name }}, {{ sent.partySize }} {{ sent.partySize === 1 ? 'persona' : 'personas' }} en {{ sent.branchName }}, el {{ dateText(sent.date) }} a las {{ sent.time }}.</p>
-      <p class="muted">{{ REQUEST_STATUS[sent.status] }}. Guarda tu folio para consultarla.</p>
-      <button type="button" class="rsv-secondary" @click="another">Hacer otra solicitud</button>
+    <div v-if="sent" ref="receipt" class="rsv-card rsv-done" tabindex="-1">
+      <div role="status">
+        <h3>{{ sent.status === 'PENDING' ? 'Solicitud recibida' : sent.status === 'CONFIRMED' ? 'Reserva confirmada' : sentMessage }}</h3>
+        <p v-if="sent.status === 'PENDING'" class="muted">{{ sentMessage }}</p>
+      </div>
+      <div class="rsv-ticket">
+        <p>Folio <strong>{{ sent.folio }}</strong></p>
+        <p>{{ sent.branchName }} · {{ dateText(sent.date) }} · {{ sent.time }}</p>
+        <p class="muted">{{ sent.name }} · {{ sent.partySize }} {{ sent.partySize === 1 ? 'persona' : 'personas' }}</p>
+      </div>
+      <p v-if="statusError" class="rsv-error" role="alert">{{ statusError }}</p>
+      <div class="rsv-actions">
+        <button v-if="sent.status === 'PENDING'" type="button" class="rsv-primary" :disabled="checkingStatus" @click="updateStatus(true)">
+          {{ checkingStatus ? 'Consultando…' : 'Actualizar estado' }}
+        </button>
+        <button type="button" class="rsv-secondary" @click="another">Hacer otra solicitud</button>
+      </div>
     </div>
 
     <form v-else class="rsv-card" novalidate @submit.prevent="submit">
       <p v-if="fromAssistant" class="rsv-assist" role="status">El asistente llenó la solicitud con lo que le dijiste. Revisa los datos y envíala.</p>
-      <p v-if="!bookable.length" class="muted">Por ahora las reservas se hacen por teléfono con cada sucursal.</p>
+      <p v-if="!bookable.length" class="muted">En este momento no hay sucursales con reservas en línea.</p>
       <template v-else>
         <div class="rsv-row">
           <label>Sucursal
@@ -180,11 +263,14 @@ async function lookup() {
           <label>Nombre<input v-model="form.name" class="rsv-field" maxlength="120" autocomplete="name" /></label>
           <label>Teléfono (10 dígitos)<input v-model="form.phone" class="rsv-field" maxlength="20" inputmode="tel" autocomplete="tel-national" /></label>
         </div>
+        <label v-if="emailAvailable">Correo para la confirmación (opcional)
+          <input v-model="form.email" class="rsv-field" type="email" maxlength="254" autocomplete="email" />
+        </label>
         <label>Comentarios (opcional)<input v-model="form.notes" class="rsv-field" maxlength="300" placeholder="Cumpleaños, silla para bebé…" /></label>
 
         <p v-if="sendError" class="rsv-error" role="alert">{{ sendError }}</p>
         <div class="rsv-send">
-          <p class="muted small">{{ problem || 'La sucursal confirmará tu reserva por teléfono.' }}</p>
+          <p class="muted small">{{ problem || 'La sucursal revisará tu solicitud antes de confirmarla.' }}</p>
           <button type="submit" class="rsv-primary" :disabled="!!problem || sending">{{ sending ? 'Enviando…' : 'Enviar solicitud' }}</button>
         </div>
       </template>
@@ -243,23 +329,27 @@ legend { font-size: 13px; font-weight: 700; margin-bottom: 8px; padding: 0; }
 .rsv-error { margin: 0; color: #a3260b; font-size: 14px; }
 .muted { margin: 0; color: var(--gray); font-size: 14px; }
 .small { font-size: 13px; }
+.rsv-done h3 { margin: 0 0 6px; font-size: clamp(1.55rem, 3vw, 2.1rem); }
 .rsv-done p { margin: 0; }
-.rsv-kicker { font-size: 12px; font-weight: 700; letter-spacing: .28em; text-transform: uppercase; color: var(--clay); }
-.rsv-folio { font-size: 22px; font-family: 'Lora', Georgia, serif; }
-.rsv-folio strong { letter-spacing: .08em; }
+.rsv-ticket { display: grid; gap: 6px; padding-block: 14px; border-block: 1px solid var(--line); }
+.rsv-ticket p:first-child { display: flex; align-items: baseline; gap: 12px; }
+.rsv-ticket strong { font-size: 1.3rem; font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+.rsv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .rsv-lookup { gap: 0; }
 .rsv-lookup summary { cursor: pointer; font-weight: 700; font-size: 15px; }
 .rsv-found { margin: 14px 0 0; font-size: 15px; }
 
 @media (max-width: 760px) {
   .rsv-card { padding: 18px; }
-  .rsv-row, .rsv-row.two, .rsv-row.three { grid-template-columns: 1fr 1fr; }
+  .rsv-row, .rsv-row.two, .rsv-row.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rsv-row > label:first-child { grid-column: 1 / -1; }
   .rsv-row.two > label { grid-column: 1 / -1; }
   .rsv-row.three > button { grid-column: 1 / -1; }
   .rsv-send { flex-direction: column-reverse; align-items: stretch; }
 }
 @media (prefers-reduced-motion: no-preference) {
+  .rsv-done { animation: receipt-enter 180ms ease-out both; }
+  @keyframes receipt-enter { from { opacity: .72; transform: translateY(6px); } }
   :is(.rsv-primary, .rsv-secondary) { transition: transform 150ms ease-out, background-color 150ms ease; }
   :is(.rsv-primary, .rsv-secondary):active:not(:disabled) { transform: scale(.98); }
 }
