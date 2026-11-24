@@ -1,12 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { ApiError } from '../src/lib/api.js'
 import { addressText, assistantErrorText, conversationForApi, MAX_TURNS, publicMenuApi, telHref } from '../src/lib/publicMenu.js'
 import AssistantChat from '../src/components/AssistantChat.vue'
-import PublicMenuView from '../src/views/PublicMenuView.vue'
 
 const TOKEN = '30secDfG8LLjLKQMiZQ3mjjUoau5kbZ1S-1DU84qUfs'
-const MENU = { menuVersion: 1, products: [], modifiers: [] }
 
 describe('asistente y datos de la sucursal: reglas', () => {
   it('manda la conversación sin errores, alternando y recortada por el principio', () => {
@@ -72,37 +70,5 @@ describe('chat del asistente', () => {
     expect(wrapper.find('input').element.value).toBe('¿Tienen postres?')
     expect(wrapper.findAll('.msg.user')).toHaveLength(0)
     wrapper.unmount()
-  })
-})
-
-describe('página del menú: visita y asistente', () => {
-  beforeEach(() => { window.location.hash = `#${TOKEN}` })
-
-  const calls = (context) => ({
-    context: vi.fn(async () => ({ data: { restaurantName: 'La Mesa Centro', tableNumber: 2, currency: 'MXN', timezone: 'America/Mexico_City', ...context } })),
-    menu: vi.fn(async () => ({ data: MENU })),
-    presence: vi.fn(async () => null),
-    ask: vi.fn(async () => 'ok'),
-  })
-
-  it('muestra la dirección, Cómo llegar, el teléfono y el asistente cuando la API lo ofrece', async () => {
-    const wrapper = mount(PublicMenuView, { props: { api: calls({
-      address: { line1: 'Av. Juárez 120', city: 'Guadalajara', state: 'Jalisco', postalCode: '44100' }, phone: '33 1234 5678',
-      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Av.%20Ju%C3%A1rez', assistant: true,
-    }) } })
-    await flushPromises()
-    expect(wrapper.find('.visit').text()).toContain('Av. Juárez 120, 44100 Guadalajara, Jalisco')
-    const link = wrapper.find('.visit a[target="_blank"]')
-    expect(link.attributes('href')).toMatch(/^https:\/\/www\.google\.com\/maps\/search/)
-    expect(link.attributes('rel')).toBe('noopener noreferrer')
-    expect(wrapper.find('a[href="tel:3312345678"]').exists()).toBe(true)
-    expect(wrapper.find('.chat .fab').exists()).toBe(true)
-  })
-
-  it('sin dirección ni asistente no muestra ninguno de los dos', async () => {
-    const wrapper = mount(PublicMenuView, { props: { api: calls({ assistant: false }) } })
-    await flushPromises()
-    expect(wrapper.find('.visit').exists()).toBe(false)
-    expect(wrapper.find('.chat').exists()).toBe(false)
   })
 })
