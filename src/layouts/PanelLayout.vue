@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSession } from '../stores/session.js'
-import { GROUPS, MODULES, ROLE_NAMES } from '../modules.js'
+import { MODULES, ROLE_NAMES, modulesIn } from '../modules.js'
 import NoticeBell from '../components/NoticeBell.vue'
 
 const session = useSession()
@@ -11,10 +11,9 @@ const route = useRoute()
 const menuOpen = ref(false)
 const leaving = ref(false)
 
-const visible = computed(() => MODULES.filter((m) => session.canOpen(m.permission)))
-const groups = computed(() =>
-  GROUPS.map((g) => ({ name: g, modules: visible.value.filter((m) => m.group === g) })).filter((g) => g.modules.length),
-)
+const mainNav = computed(() => modulesIn('main', session.canOpen))
+// Las pantallas de Configuración (sucursal, impresión…) marcan "Configuración" en el menú.
+const inSettings = computed(() => MODULES.find((m) => m.key === route.meta.module)?.nav === 'config')
 const role = computed(() => ROLE_NAMES[session.currentMembership?.role] ?? session.currentMembership?.role ?? '')
 // Título del encabezado (Figma 02 · Panel): el del módulo abierto o "Inicio".
 const pageTitle = computed(() => MODULES.find((m) => m.key === route.meta.module)?.title ?? 'Inicio')
@@ -50,12 +49,16 @@ async function logout() {
       </div>
       <nav id="panel-nav" aria-label="Módulos">
         <RouterLink :to="{ name: 'inicio' }" class="nav-link" exact-active-class="active">Inicio</RouterLink>
-        <section v-for="g in groups" :key="g.name">
-          <h2>{{ g.name }}</h2>
-          <RouterLink v-for="m in g.modules" :key="m.key" :to="{ name: m.key }" class="nav-link" active-class="active">
-            {{ m.title }}
-          </RouterLink>
-        </section>
+        <RouterLink
+          v-for="m in mainNav"
+          :key="m.key"
+          :to="{ name: m.key }"
+          class="nav-link"
+          :class="{ active: m.key === 'configuracion' && inSettings }"
+          active-class="active"
+        >
+          {{ m.title }}
+        </RouterLink>
       </nav>
       <div class="who">
         <span class="name">{{ session.user?.name }}</span>
@@ -96,8 +99,6 @@ async function logout() {
 .brand img { display: block; height: 46px; width: auto; }
 .menu-toggle { display: none; }
 nav { display: grid; gap: 4px; }
-nav section { display: grid; gap: 4px; }
-nav h2 { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--side-text); opacity: .75; margin: 14px 12px 4px; }
 .nav-link { display: block; padding: 9px 12px; border-radius: 6px; color: #fff; text-decoration: none; font-size: .82rem; font-weight: 700; transition: background-color .15s ease; }
 .nav-link:hover { background: rgba(255, 255, 255, .07); }
 .nav-link.active { background: var(--accent); }

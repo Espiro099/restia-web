@@ -35,7 +35,6 @@ import { MODULES } from '../modules.js'
           <article v-for="m in MODULES" :key="m.key" class="module">
             <h3>{{ m.title }}</h3>
             <p>{{ m.description }}</p>
-            <span class="tag">{{ m.group }}</span>
           </article>
         </div>
       </section>
