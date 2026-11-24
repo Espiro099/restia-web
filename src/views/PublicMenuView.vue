@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { menuSections, priceText, publicErrorText, publicMenuApi, tokenFromHash } from '../lib/publicMenu.js'
+import { addressText, menuSections, priceText, publicErrorText, publicMenuApi, telHref, tokenFromHash } from '../lib/publicMenu.js'
+import AssistantChat from '../components/AssistantChat.vue'
 import { imageSrc } from '../lib/productImage.js'
 
 // Página que abre el cliente al escanear el QR de su mesa: solo lectura, sin cuenta ni cookies.
@@ -14,6 +15,10 @@ const error = ref('')
 const loading = ref(true)
 
 const sections = computed(() => menuSections(menu.value))
+const address = computed(() => addressText(context.value?.address))
+const phoneHref = computed(() => telHref(context.value?.phone))
+// El asistente (QR-14) solo aparece si la API lo ofrece; usa la misma credencial del QR.
+const ask = (messages) => calls.ask(token.value, messages)
 
 async function load() {
   token.value = tokenFromHash(window.location.hash)
@@ -94,8 +99,18 @@ function jump(anchor) {
           </article>
         </section>
         <p class="note">Precios en {{ context?.currency ?? 'MXN' }} con IVA incluido. Para ordenar, llama a tu mesero.</p>
+        <section v-if="address || phoneHref" class="visit" aria-labelledby="visit-title">
+          <h2 id="visit-title">Visítanos</h2>
+          <p v-if="address" class="address">{{ address }}</p>
+          <div class="visit-actions">
+            <!-- Abre Google Maps en otra pestaña; la página no carga nada de Google (QR-13). -->
+            <a v-if="context.mapsUrl" :href="context.mapsUrl" target="_blank" rel="noopener noreferrer" class="action">Cómo llegar <span aria-hidden="true">↗</span></a>
+            <a v-if="phoneHref" :href="phoneHref" class="action secondary">Llamar a la sucursal</a>
+          </div>
+        </section>
       </template>
     </main>
+    <AssistantChat v-if="!loading && !error && context?.assistant" :ask="ask" :restaurant="context.restaurantName" />
   </div>
 </template>
 
@@ -127,4 +142,11 @@ h3 { margin: 0; font-size: 1rem; }
 .state { text-align: center; padding: 48px 8px; color: var(--muted); }
 .state button { font: inherit; margin-top: 10px; padding: 9px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
 .note { color: var(--muted); font-size: .82rem; text-align: center; padding: 18px 0 32px; }
+.visit { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 96px; }
+.visit h2 { margin: 0 0 6px; }
+.address { margin: 0 0 12px; color: var(--muted); line-height: 1.4; }
+.visit-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.action { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 600; text-decoration: none; }
+.action.secondary { background: var(--accent-soft); color: var(--accent-strong); }
+.action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
