@@ -198,4 +198,12 @@ a.hint:hover { text-decoration: underline; }
   .wide-left { grid-template-columns: 1fr; }
   .donut { flex-wrap: wrap; }
 }
+.kpi { border-radius: 14px; border-top: 3px solid #bb542b; background: linear-gradient(155deg, #fffaf3, var(--surface) 68%); }
+.kpi .value { color: #382014; letter-spacing: -.03em; }
+.tile { border-radius: 14px; }
+.tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .tile { transition: transform 150ms ease-out, border-color 150ms ease, box-shadow 150ms ease; }
+  .tile:hover { transform: translateY(-2px); box-shadow: 0 6px 15px #38201410; }
+}
 </style>

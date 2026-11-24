@@ -85,7 +85,9 @@ async function logout() {
         </div>
       </header>
       <main class="content">
-        <RouterView />
+        <RouterView v-slot="{ Component, route: viewRoute }">
+          <component :is="Component" :key="viewRoute.name" class="panel-view" />
+        </RouterView>
       </main>
     </div>
   </div>
@@ -136,5 +138,15 @@ nav { display: grid; gap: 4px; }
   .page-title { font-size: 1.25rem; }
   .bar-end { margin-left: 0; width: 100%; flex-wrap: wrap; gap: 8px; }
   .content { padding: 16px; }
+}
+.side { background: linear-gradient(160deg, #3c2418, #26190f 64%); }
+.nav-link.active { background: #a73814; box-shadow: inset 3px 0 #f7b97d; }
+.bar { box-shadow: 0 2px 12px #38201408; }
+.content { padding-block-start: 34px; }
+@media (prefers-reduced-motion: no-preference) {
+  .panel-view { animation: panel-enter 180ms cubic-bezier(.23, 1, .32, 1) both; }
+  .nav-link, .logout { transition: background-color 150ms ease, transform 150ms ease-out; }
+  :is(.nav-link, .logout):active { transform: scale(.985); }
+  @keyframes panel-enter { from { opacity: .85; transform: translateY(4px); } }
 }
 </style>

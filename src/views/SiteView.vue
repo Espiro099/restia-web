@@ -117,7 +117,7 @@ onBeforeUnmount(() => { document.title = previousTitle })
           <p class="eyebrow light">Bienvenido a La Mesa</p>
           <h1 id="hero-title">El mejor sabor,<br />en el lugar perfecto.</h1>
           <p class="lead">Una buena mesa, tiempo para conversar y el gusto de compartir algo recién preparado.</p>
-          <a href="#menu" class="cta">Explorar el menú <span aria-hidden="true">→</span></a>
+          <a href="#menu" class="cta">Descubre la carta <span aria-hidden="true">→</span></a>
         </div>
       </section>
 
@@ -135,12 +135,16 @@ onBeforeUnmount(() => { document.title = previousTitle })
           <p class="cats">Entradas <span aria-hidden="true">·</span> Platos fuertes <span aria-hidden="true">·</span> Bebidas y postres</p>
           <p class="note">Escanea el QR de tu mesa para consultar la carta de la sucursal.</p>
         </div>
-        <img :src="cover" alt="Corte a la parrilla con verduras asadas, servido en la mesa" class="photo dish" width="604" height="482" loading="lazy" />
+        <div class="photo-frame">
+          <img :src="cover" alt="Corte a la parrilla con verduras asadas, servido en la mesa" class="photo" width="604" height="482" loading="lazy" />
+        </div>
       </section>
 
       <section id="nosotros" class="band" aria-labelledby="about-title">
         <div class="wrap split about">
-          <img :src="room" alt="Salón de La Mesa con luz cálida y mesas puestas" class="photo" width="604" height="482" loading="lazy" />
+          <div class="photo-frame">
+            <img :src="room" alt="Salón de La Mesa con luz cálida y mesas puestas" class="photo" width="604" height="482" loading="lazy" />
+          </div>
           <div class="copy">
             <p class="eyebrow">Nuestra esencia</p>
             <h2 id="about-title">Una mesa para<br />quedarse.</h2>
@@ -285,7 +289,7 @@ h2 { font-size: clamp(2.3rem, 4.3vw, 4rem); line-height: 1.15; }
   .menu { padding-top: 56px; padding-bottom: 38px; }
   .band { padding: 62px 0 40px; }
   /* En móvil la foto del salón va después del texto, como en el diseño. */
-  .about .photo { order: 2; }
+  .about .photo-frame { order: 2; }
   .body { font-size: 15px; }
   .branches { padding-top: 56px; padding-bottom: 56px; }
   .visit { padding-top: 56px; padding-bottom: 56px; }
@@ -296,7 +300,38 @@ h2 { font-size: clamp(2.3rem, 4.3vw, 4rem); line-height: 1.15; }
   .staff { font-size: 12px; }
 }
 
+.site { --header-height: 82px; }
+.site main section[id] { scroll-margin-top: var(--header-height); }
+.site-top { border-bottom: 1px solid #e7d7c4; }
+.site-hero { min-height: max(560px, calc(100svh - var(--header-height))); }
+.shortcuts { border-bottom: 1px solid #e7d7c4; }
+.shortcuts a { display: flex; justify-content: space-between; align-items: center; min-height: 50px; gap: 6px; }
+.shortcuts a + a { border-inline-start: 1px solid #e7d7c4; padding-inline-start: clamp(8px, 2vw, 28px); }
+.photo-frame { overflow: hidden; border-radius: 16px; }
+.visit-band { border-top: 1px solid #e7d7c4; }
+.site-top nav a { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: .35em; }
+.site-top nav a:hover, .site-top nav a:focus-visible { text-decoration-color: currentColor; }
+@media (max-width: 760px) {
+  .site { --header-height: 64px; }
+  .site-hero { min-height: min(690px, max(440px, calc(100svh - var(--header-height)))); }
+}
 @media (prefers-reduced-motion: no-preference) {
-  :global(html) { scroll-behavior: smooth; }
+  :global(html:has(.site)) { scroll-behavior: smooth; }
+  .site-hero-text { animation: site-enter 420ms cubic-bezier(.16, 1, .3, 1) both; }
+  .cta, .cta span, .shortcuts a span, .photo { transition: transform 180ms cubic-bezier(.23, 1, .32, 1), background-color 150ms ease; }
+  .cta:active { transform: scale(.98); }
+  @media (hover: hover) and (pointer: fine) {
+    .cta:hover span, .shortcuts a:hover span { transform: translateX(3px); }
+    .photo-frame:hover .photo { transform: scale(1.025); }
+  }
+  @supports (animation-timeline: view()) {
+    :is(.menu, .about, .branches, .visit) > :is(.copy, .photo-frame, .eyebrow, h2) {
+      animation: site-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 90%;
+    }
+    @keyframes site-reveal { from { opacity: .78; transform: translateY(14px); } }
+  }
+  @keyframes site-enter { from { opacity: 0; transform: translateY(12px); } }
 }
 </style>

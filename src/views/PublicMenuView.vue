@@ -278,4 +278,16 @@ h1 { font-size: clamp(2rem, 8vw, 2.8rem); line-height: 1.1; }
   .sheet { animation: rise .22s ease-out; }
   @keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 }
+.qr .bar { border-bottom: 1px solid var(--line); }
+.dish { transition: border-color 150ms ease, background-color 150ms ease; }
+.dish:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .dish:hover { border-color: #c78e6c; background: #fff6eb; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .qr-hero-text { animation: qr-enter 300ms cubic-bezier(.16, 1, .3, 1) both; }
+  .dish { transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease-out; }
+  .dish:active { transform: scale(.985); }
+  @keyframes qr-enter { from { opacity: 0; transform: translateY(8px); } }
+}
 </style>
