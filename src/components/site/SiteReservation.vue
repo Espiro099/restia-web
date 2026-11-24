@@ -35,11 +35,10 @@ const maxDate = localDate(MAX_DAYS_AHEAD)
 const problem = computed(() => requestProblem(form))
 const branchName = (code) => props.branches.find((b) => b.code === code)?.name ?? code
 
-watch(() => props.branchCode, (code) => {
-  if (code && bookable.value.some((b) => b.code === code)) form.branchCode = code
-}, { immediate: true })
-watch(bookable, (list) => {
-  if (!form.branchCode && list.length === 1) form.branchCode = list[0].code
+watch([() => props.branchCode, bookable], ([code, list], [previousCode, previousList]) => {
+  const arrived = code !== previousCode || !previousList?.some((branch) => branch.code === code)
+  if (code && arrived && list.some((branch) => branch.code === code)) form.branchCode = code
+  else if (!form.branchCode && list.length === 1) form.branchCode = list[0].code
 }, { immediate: true })
 
 async function loadSlots() {

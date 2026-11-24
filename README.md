@@ -41,3 +41,7 @@ Para construir un módulo, agrega su pantalla a `BUILT` en `src/router.js` (sin 
 
 - `main` siempre compila y pasa pruebas; el CI (`.github/workflows/ci.yml`) corre en cada push y pull request a `main`.
 - Cada cambio va en una rama corta `feature/<nombre>` desde `main`, con commits atómicos, y entra por pull request revisado por otro integrante.
+
+### Contacto público de La Mesa
+
+Configura `VITE_LA_MESA_CONTACT_EMAIL` al compilar para mostrar un correo de contacto en el sitio y en la política de privacidad. La demostración muestra un correo de ejemplo cuando la variable está vacía.
