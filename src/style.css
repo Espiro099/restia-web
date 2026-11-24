@@ -1,16 +1,22 @@
 :root {
-  /* Colores de la marca Restia: la flama del logo (acento) sobre crema y café. */
-  --bg: #faf5ef;
+  /* Sistema del panel (Figma "Restia web", 02 · Panel del restaurante): crema, tarjetas blancas con borde
+     arena, la flama de Restia como acento y la barra lateral en café. */
+  --bg: #f9f6f1;
   --surface: #ffffff;
-  --text: #2b1810;
-  --muted: #6b5d55;
-  --line: #eaded3;
-  --accent: #b4441a;
-  --accent-soft: #fbeadf;
+  --text: #202b32;
+  --muted: #5d6466;
+  --line: #ece4db;
+  --divider: #ede5db;
+  --accent: #c74115;
+  --accent-strong: #a5360f;
+  --accent-soft: #fbe9d2;
   --danger: #b3261e;
   --danger-soft: #fbe9e7;
-  --ok: #1e6b3a;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ok: #40764b;
+  --ok-soft: #e2f0e0;
+  --side: #26190f;
+  --side-text: #ddc8b7;
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
   background: var(--bg);
 }
