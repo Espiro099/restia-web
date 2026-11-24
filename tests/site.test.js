@@ -15,7 +15,7 @@ describe('sitio de La Mesa', () => {
     expect(await guard({ meta: byName.sitio.meta, fullPath: '/' }, session)).toBe(true)
   })
 
-  it('lleva la marca La Mesa, sus secciones y el enlace del personal', async () => {
+  it('lleva la marca La Mesa, sus secciones sin publicar el enlace del personal', async () => {
     const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: SiteView }, { path: '/acceso', name: 'login', component: { template: '<p />' } }] })
     router.push('/')
     await router.isReady()
@@ -23,12 +23,13 @@ describe('sitio de La Mesa', () => {
     const wrapper = mount(SiteView, { props: { api }, global: { plugins: [router], stubs: { BranchMap: true } } })
     await flushPromises()
     expect(document.title).toBe('La Mesa · Restaurante')
-    expect(wrapper.find('h1').text()).toContain('El mejor sabor')
+    expect(wrapper.find('h1').text()).toContain('El sabor de')
     expect(wrapper.findAll('img[alt="La Mesa"]')).toHaveLength(2)
     expect(wrapper.text()).toContain('Nos vemos en La Mesa.')
     expect(wrapper.text()).not.toContain('Restia')
     for (const id of ['menu', 'nosotros', 'sucursales', 'reservar']) expect(wrapper.find(`#${id}`).exists()).toBe(true)
-    expect(wrapper.find('.staff').attributes('href')).toBe('/acceso')
+    expect(wrapper.find('a[href="/acceso"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Acceso para el personal')
     wrapper.unmount()
   })
 })

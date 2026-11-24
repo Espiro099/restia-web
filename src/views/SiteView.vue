@@ -13,7 +13,7 @@ import cover from '../assets/sitio/portada.webp'
 import room from '../assets/sitio/salon.webp'
 
 // Sitio público de La Mesa (Figma "Restia web", página 01 · Clientes, V2). Lo ve cualquier persona sin
-// sesión; el personal entra al panel desde el pie de página. La carta con precios se consulta con el QR de
+// sesión. La carta con precios se consulta con el QR de
 // cada mesa (/m#token), porque depende de la sucursal. Sucursales en el mapa, solicitudes de reserva y
 // asistente: Decisiones_Public_Site en restia-api.
 const props = defineProps({
@@ -110,22 +110,20 @@ onBeforeUnmount(() => { document.title = previousTitle })
     </header>
 
     <main>
-      <section id="inicio" class="site-hero" aria-labelledby="hero-title">
-        <img :src="cover" alt="" class="site-hero-photo" width="1792" height="768" fetchpriority="high" />
-        <div class="veil" aria-hidden="true" />
-        <div class="wrap site-hero-text">
-          <p class="eyebrow light">Bienvenido a La Mesa</p>
-          <h1 id="hero-title">El mejor sabor,<br />en el lugar perfecto.</h1>
-          <p class="lead">Una buena mesa, tiempo para conversar y el gusto de compartir algo recién preparado.</p>
-          <a href="#menu" class="cta">Explorar el menú <span aria-hidden="true">→</span></a>
+      <section id="inicio" class="wrap site-hero" aria-labelledby="hero-title">
+        <div class="site-hero-text">
+          <p class="eyebrow">La Mesa</p>
+          <h1 id="hero-title">El sabor de<br />compartir.</h1>
+          <p class="lead">Cocina mexicana, platos al centro y tiempo para una buena sobremesa.</p>
+          <div class="hero-actions">
+            <a href="#reservar" class="cta">Reserva tu mesa <span aria-hidden="true">→</span></a>
+            <a href="#menu" class="hero-menu">Descubre la carta <span aria-hidden="true">↓</span></a>
+          </div>
+        </div>
+        <div class="hero-frame">
+          <img :src="cover" alt="Corte a la parrilla servido con verduras asadas" class="site-hero-photo" width="1792" height="768" fetchpriority="high" />
         </div>
       </section>
-
-      <nav class="wrap shortcuts" aria-label="Atajos">
-        <a href="#menu">Menú <span aria-hidden="true">→</span></a>
-        <a href="#sucursales">Sucursales <span aria-hidden="true">→</span></a>
-        <a href="#reservar">Reservar <span aria-hidden="true">→</span></a>
-      </nav>
 
       <section id="menu" class="wrap split menu" aria-labelledby="menu-title">
         <div class="copy">
@@ -135,12 +133,16 @@ onBeforeUnmount(() => { document.title = previousTitle })
           <p class="cats">Entradas <span aria-hidden="true">·</span> Platos fuertes <span aria-hidden="true">·</span> Bebidas y postres</p>
           <p class="note">Escanea el QR de tu mesa para consultar la carta de la sucursal.</p>
         </div>
-        <img :src="cover" alt="Corte a la parrilla con verduras asadas, servido en la mesa" class="photo dish" width="604" height="482" loading="lazy" />
+        <div class="photo-frame">
+          <img :src="cover" alt="Corte a la parrilla con verduras asadas, servido en la mesa" class="photo" width="604" height="482" loading="lazy" />
+        </div>
       </section>
 
       <section id="nosotros" class="band" aria-labelledby="about-title">
         <div class="wrap split about">
-          <img :src="room" alt="Salón de La Mesa con luz cálida y mesas puestas" class="photo" width="604" height="482" loading="lazy" />
+          <div class="photo-frame">
+            <img :src="room" alt="Salón de La Mesa con luz cálida y mesas puestas" class="photo" width="604" height="482" loading="lazy" />
+          </div>
           <div class="copy">
             <p class="eyebrow">Nuestra esencia</p>
             <h2 id="about-title">Una mesa para<br />quedarse.</h2>
@@ -173,7 +175,7 @@ onBeforeUnmount(() => { document.title = previousTitle })
     <footer class="foot">
       <div class="wrap foot-row">
         <img :src="logoWhite" alt="La Mesa" width="96" height="53" />
-        <RouterLink :to="{ name: 'login' }" class="staff">Acceso para el personal <span aria-hidden="true">→</span></RouterLink>
+        <a href="#inicio" class="back-top">Volver arriba <span aria-hidden="true">↑</span></a>
       </div>
     </footer>
   </div>
@@ -224,20 +226,24 @@ nav a { text-decoration: none; font-weight: 700; }
 .site-cta-top { min-height: 46px; }
 
 .eyebrow { margin: 0 0 18px; font-size: 12px; font-weight: 700; letter-spacing: .32em; text-transform: uppercase; color: var(--clay); }
-.eyebrow.light { color: var(--gold); font-size: 13px; }
 h1, h2 { font-family: 'Lora', Georgia, serif; font-weight: 700; margin: 0; letter-spacing: -.01em; }
 
-.site-hero { position: relative; min-height: 630px; display: flex; align-items: center; overflow: hidden; color: var(--paper); }
-.site-hero-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-/* El velo del diseño (12 %) más un degradado a la izquierda, para que el titular se lea sobre cualquier zona de la foto. */
-.veil { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(38, 25, 15, .72) 0%, rgba(38, 25, 15, .35) 45%, rgba(38, 25, 15, .12) 70%); }
-.site-hero-text { position: relative; width: 100%; padding-top: 72px; padding-bottom: 72px; }
-h1 { font-size: clamp(2.6rem, 5.6vw, 5rem); line-height: 1.1; }
-.lead { max-width: 30em; margin: 20px 0 32px; font-size: clamp(1rem, 1.4vw, 1.2rem); line-height: 1.45; }
-
-.shortcuts { display: grid; grid-template-columns: repeat(3, 1fr); min-height: 79px; align-items: center; }
-.shortcuts a { padding: 0 12px; font-size: 17px; font-weight: 700; text-decoration: none; }
-.shortcuts a:hover { color: var(--clay); }
+.site-hero {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: clamp(20px, 4vw, 64px);
+  min-height: calc(100svh - var(--header-height));
+  padding-block: clamp(36px, 5vw, 68px);
+}
+.site-hero-text { padding-block: 22px; }
+.hero-frame { overflow: hidden; height: clamp(380px, 72svh, 730px); border-radius: 46% 46% 24px 24px / 28% 28% 24px 24px; background: #49301f; }
+.site-hero-photo { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 76% center; }
+h1 { font-size: clamp(3rem, 6.8vw, 7.15rem); line-height: .99; letter-spacing: -.065em; }
+.lead { color: var(--gray); max-width: 32ch; margin: 24px 0 32px; font-size: clamp(1rem, 1.6vw, 1.25rem); line-height: 1.55; }
+.hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
+.hero-menu, .back-top { display: inline-flex; gap: 8px; align-items: center; font-size: .9rem; font-weight: 700; text-underline-offset: .35em; }
+.menu { border-top: 1px solid #e7d7c4; }
 
 .split { display: grid; grid-template-columns: 1fr 604px; gap: 120px; align-items: center; }
 .menu { padding-top: 87px; padding-bottom: 81px; }
@@ -263,8 +269,6 @@ h2 { font-size: clamp(2.3rem, 4.3vw, 4rem); line-height: 1.15; }
 .foot { background: var(--ink); color: var(--paper); padding: 0; border: 0; font-size: inherit; }
 .foot-row { display: flex; align-items: center; justify-content: space-between; min-height: 108px; gap: 16px; }
 .foot img { display: block; height: 52px; width: auto; }
-.staff { font-size: 14px; font-weight: 700; text-decoration: none; }
-.staff:hover { text-decoration: underline; }
 
 @media (max-width: 1100px) {
   .split, .about { grid-template-columns: 1fr 1fr; gap: 56px; }
@@ -276,16 +280,11 @@ h2 { font-size: clamp(2.3rem, 4.3vw, 4rem); line-height: 1.15; }
   .logo img { height: 40px; }
   .site-top nav { gap: 14px; font-size: 13px; }
   .site-cta-top { display: none; }
-  .site-hero { min-height: 640px; align-items: flex-end; }
-  .veil { background: linear-gradient(0deg, rgba(38, 25, 15, .78) 0%, rgba(38, 25, 15, .4) 55%, rgba(38, 25, 15, .12) 100%); }
-  .site-hero-text { padding-bottom: 40px; }
-  .shortcuts { min-height: 66px; }
-  .shortcuts a { font-size: 15px; padding: 0; }
   .split, .about { grid-template-columns: 1fr; gap: 28px; }
   .menu { padding-top: 56px; padding-bottom: 38px; }
   .band { padding: 62px 0 40px; }
   /* En móvil la foto del salón va después del texto, como en el diseño. */
-  .about .photo { order: 2; }
+  .about .photo-frame { order: 2; }
   .body { font-size: 15px; }
   .branches { padding-top: 56px; padding-bottom: 56px; }
   .visit { padding-top: 56px; padding-bottom: 56px; }
@@ -293,10 +292,46 @@ h2 { font-size: clamp(2.3rem, 4.3vw, 4rem); line-height: 1.15; }
   .foot { padding-bottom: 64px; }
   .foot-row { min-height: 88px; }
   .foot img { height: 39px; }
-  .staff { font-size: 12px; }
 }
 
+.site { --header-height: 82px; }
+.site main section[id] { scroll-margin-top: var(--header-height); }
+.site-top { border-bottom: 1px solid #e7d7c4; }
+.photo-frame { overflow: hidden; border-radius: 16px; }
+.visit-band { border-top: 1px solid #e7d7c4; }
+.site-top nav a { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: .35em; }
+.site-top nav a:hover, .site-top nav a:focus-visible { text-decoration-color: currentColor; }
+@media (max-width: 760px) {
+  .site { --header-height: 64px; }
+  .site-hero { grid-template-columns: minmax(0, 1fr); padding-block: 24px 34px; gap: 14px; min-height: auto; }
+  .site-hero-text { padding-block: 0 8px; }
+  .hero-frame { height: clamp(245px, 46vh, 410px); }
+  h1 { font-size: clamp(2.9rem, 11vw, 5rem); }
+  .lead { margin-block: 16px 20px; }
+}
 @media (prefers-reduced-motion: no-preference) {
-  :global(html) { scroll-behavior: smooth; }
+  :global(html:has(.site)) { scroll-behavior: smooth; }
+  .site-hero-text > * { animation: site-enter 560ms cubic-bezier(.16, 1, .3, 1) both; }
+  .site-hero-text h1 { animation-delay: 80ms; }
+  .site-hero-text .lead { animation-delay: 150ms; }
+  .site-hero-text .hero-actions { animation-delay: 220ms; }
+  .hero-frame { animation: hero-photo-enter 720ms cubic-bezier(.16, 1, .3, 1) both; }
+  .cta, .cta span, .hero-menu span, .photo { transition: transform 180ms cubic-bezier(.23, 1, .32, 1), background-color 150ms ease; }
+  .cta:active { transform: scale(.98); }
+  @media (hover: hover) and (pointer: fine) {
+    .cta:hover span { transform: translateX(4px); }
+    .hero-menu:hover span { transform: translateY(4px); }
+    .photo-frame:hover .photo { transform: scale(1.025); }
+  }
+  @supports (animation-timeline: view()) {
+    :is(.menu, .about, .branches, .visit) > :is(.copy, .photo-frame, .eyebrow, h2) {
+      animation: site-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+    @keyframes site-reveal { from { opacity: .35; transform: translateY(34px); } }
+  }
+  @keyframes site-enter { from { opacity: 0; transform: translateY(22px); } }
+  @keyframes hero-photo-enter { from { opacity: .2; transform: translateY(26px) scale(.97); } }
 }
 </style>

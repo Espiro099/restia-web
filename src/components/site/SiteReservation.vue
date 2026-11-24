@@ -260,4 +260,8 @@ legend { font-size: 13px; font-weight: 700; margin-bottom: 8px; padding: 0; }
   .rsv-row.three > button { grid-column: 1 / -1; }
   .rsv-send { flex-direction: column-reverse; align-items: stretch; }
 }
+@media (prefers-reduced-motion: no-preference) {
+  :is(.rsv-primary, .rsv-secondary) { transition: transform 150ms ease-out, background-color 150ms ease; }
+  :is(.rsv-primary, .rsv-secondary):active:not(:disabled) { transform: scale(.98); }
+}
 </style>

@@ -94,4 +94,11 @@ button:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
   .loc-map { min-height: 300px; height: 300px; }
   .loc-list { max-height: none; }
 }
+.loc-card.on { background: #fff4e8; }
+.loc-name:hover { color: var(--clay-dark); }
+@media (prefers-reduced-motion: no-preference) {
+  .loc-card { transition: background-color 150ms ease, border-color 150ms ease; }
+  :is(.loc-locate, .loc-reserve) { transition: transform 150ms ease-out; }
+  :is(.loc-locate, .loc-reserve):active:not(:disabled) { transform: scale(.98); }
+}
 </style>
