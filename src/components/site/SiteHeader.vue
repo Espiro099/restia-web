@@ -6,8 +6,8 @@ const route = useRoute()
 const sections = [
   { label: 'Carta', hash: '#menu' },
   { label: 'Instalaciones', hash: '#instalaciones' },
-  { label: 'Novedades', hash: '#novedades' },
   { label: 'Nosotros', hash: '#nosotros' },
+  { label: 'Contacto', hash: '#contacto' },
 ]
 </script>
 

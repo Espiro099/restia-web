@@ -11,7 +11,6 @@ import logo from '../../assets/marca/lamesa-logo-blanco.png'
         <RouterLink :to="{ path: '/', hash: '#contacto' }">Contacto</RouterLink>
         <RouterLink to="/privacidad">Política de privacidad</RouterLink>
       </nav>
-      <p>Restaurante simulado · Proyecto estudiantil</p>
     </div>
   </footer>
 </template>
@@ -22,6 +21,5 @@ import logo from '../../assets/marca/lamesa-logo-blanco.png'
 .site-footer nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0 22px; }
 .site-footer nav a { display: inline-flex; align-items: center; min-height: 44px; color: inherit; font-size: .9rem; text-underline-offset: .3em; }
 .site-footer img { display: block; height: 48px; width: auto; }
-.site-footer p { margin: 0; color: #f1d8c3; font-size: .84rem; }
 @media (max-width: 850px) { .site-footer { padding-bottom: 72px; } }
 </style>
