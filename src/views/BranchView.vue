@@ -2,9 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { useSession } from '../stores/session.js'
 import ErrorNotice from '../components/ErrorNotice.vue'
+import BranchMap from '../components/BranchMap.vue'
 import {
   MAX_RANGES_PER_DAY, branchApi, branchErrorText, crossesMidnight, daysFromHours, generalChanges, generalForm,
-  generalProblem, hoursProblem, reservationChanges, toleranceProblem,
+  generalProblem, hoursProblem, locationText, parseLocation, reservationChanges, toleranceProblem,
 } from '../lib/branch.js'
 import { useAction } from '../lib/useAction.js'
 
@@ -47,6 +48,16 @@ const generalDiff = computed(() => (branch.value && general.value ? generalChang
 const reservationsIssue = computed(() => hoursProblem(days.value) || toleranceProblem(tolerance.value))
 const reservationsDiff = computed(() => (branch.value && !reservationsIssue.value ? reservationChanges(branch.value, days.value, tolerance.value) : {}))
 const openDays = computed(() => days.value.filter((d) => d.ranges.length).length)
+
+// Punto en el mapa del sitio público (B-8): se escribe o se toca en el minimapa.
+const mapPoints = computed(() => {
+  const point = general.value ? parseLocation(general.value.location) : null
+  return point ? [{ key: 'branch', label: branch.value?.name ?? 'Sucursal', ...point }] : []
+})
+function pickLocation(point) {
+  const rounded = parseLocation(`${point.lat}, ${point.lng}`)
+  if (rounded) general.value.location = locationText(rounded)
+}
 
 async function submitGeneral() {
   if (generalIssue.value || !Object.keys(generalDiff.value).length) return
@@ -108,6 +119,12 @@ function copyMonday() {
             <label>País<input v-model="general.address.country" class="field mono" maxlength="2" /></label>
           </div>
         </fieldset>
+        <fieldset>
+          <legend>Punto en el mapa</legend>
+          <p class="help">Así aparece la sucursal en el sitio de La Mesa. Toca el mapa o pega las coordenadas de Google Maps (clic derecho sobre el lugar).</p>
+          <label>Latitud, longitud<input v-model="general.location" class="field mono" maxlength="40" inputmode="decimal" placeholder="20.673600, -103.344000" /></label>
+          <BranchMap class="branch-map" :points="mapPoints" selected="branch" pickable label="Mapa para ubicar la sucursal" @pick="pickLocation" />
+        </fieldset>
         <p class="help">Código {{ branch.code }} · zona horaria {{ branch.timezone }} · el día de negocio cambia a las {{ branch.businessDayCutoff }}.</p>
         <p v-if="generalIssue" class="help" aria-live="polite">{{ generalIssue }}</p>
         <p v-if="saveGeneral.error.value" class="form-error" role="alert">{{ saveGeneral.error.value }}</p>
@@ -162,4 +179,5 @@ function copyMonday() {
 .hours th[scope="row"] { font-weight: 600; white-space: nowrap; }
 .range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0; }
 .range .field { width: auto; min-width: 0; }
+.branch-map { height: 280px; margin-top: 10px; }
 </style>
